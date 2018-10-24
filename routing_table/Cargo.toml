@@ -3,6 +3,10 @@ name = "routing_table"
 version = "0.1.0"
 authors = ["Harry Chen <i@harrychen.xyz>"]
 
+[lib]
+name = "routing_table"
+crate-type = ["staticlib", "dylib"]
+
 [dependencies]
 treebitmap = { git = "https://github.com/hroi/treebitmap/" }
 libc = "0.2"

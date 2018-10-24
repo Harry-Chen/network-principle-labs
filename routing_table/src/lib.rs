@@ -2,20 +2,22 @@ extern crate treebitmap;
 extern crate libc;
 
 use libc::uint32_t;
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::net::Ipv4Addr;
 use std::str::FromStr;
+
 use treebitmap::*;
 
+type RoutingTable = IpLookupTable<Ipv4Addr, u32>;
+
 #[no_mangle]
-pub extern fn addition(a: uint32_t, b: uint32_t) -> uint32_t {
-    a + b
+pub extern fn rt_init() -> *mut RoutingTable {
+    let _ptr = unsafe { std::mem::transmute(Box::new(RoutingTable::new())) };
+    _ptr
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-    let mut tbm = IpLookupTable::new();
+#[no_mangle]
+pub extern fn rt_test(ptr: *mut RoutingTable) -> bool {
+    let mut tbm = unsafe { &mut *ptr };
     tbm.insert(Ipv4Addr::new(10, 0, 0, 0), 8, 100002);
     tbm.insert(Ipv4Addr::new(100, 64, 0, 0), 24, 10064024);
     tbm.insert(Ipv4Addr::new(100, 64, 1, 0), 24, 10064124);
@@ -32,5 +34,5 @@ mod tests {
 
     let result = tbm.longest_match(Ipv4Addr::new(200, 200, 200, 200));
     assert_eq!(result, None);
-    }
+    true
 }
