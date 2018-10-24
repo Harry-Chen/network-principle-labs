@@ -5,8 +5,9 @@ authors = ["Harry Chen <i@harrychen.xyz>"]
 
 [lib]
 name = "routing_table"
-crate-type = ["staticlib", "dylib"]
+crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 treebitmap = { git = "https://github.com/hroi/treebitmap/" }
 libc = "0.2"
+log = "0.4.5"

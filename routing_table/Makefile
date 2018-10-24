@@ -11,10 +11,10 @@ test: test.o target/debug/lib${LIBNAME}.so
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-target/release/lib${LIBNAME}.so:
+target/release/lib${LIBNAME}.so: src/lib.rs
 	cargo build --release
 
-target/debug/lib${LIBNAME}.so:
+target/debug/lib${LIBNAME}.so: src/lib.rs
 	cargo build
 
 clean:

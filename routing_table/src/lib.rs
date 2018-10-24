@@ -1,13 +1,18 @@
 extern crate treebitmap;
 extern crate libc;
 
+// #[macro_use] extern crate log;
+
 use libc::uint32_t;
 use std::net::Ipv4Addr;
-use std::str::FromStr;
 
 use treebitmap::*;
 
 type RoutingTable = IpLookupTable<Ipv4Addr, u32>;
+
+pub fn log(str: String) {
+    println!("[RT]{}", str);
+}
 
 #[no_mangle]
 pub extern fn rt_init() -> *mut RoutingTable {
@@ -16,23 +21,30 @@ pub extern fn rt_init() -> *mut RoutingTable {
 }
 
 #[no_mangle]
-pub extern fn rt_test(ptr: *mut RoutingTable) -> bool {
-    let mut tbm = unsafe { &mut *ptr };
-    tbm.insert(Ipv4Addr::new(10, 0, 0, 0), 8, 100002);
-    tbm.insert(Ipv4Addr::new(100, 64, 0, 0), 24, 10064024);
-    tbm.insert(Ipv4Addr::new(100, 64, 1, 0), 24, 10064124);
-    tbm.insert(Ipv4Addr::new(100, 64, 0, 0), 10, 100004);
+pub extern fn rt_insert(ptr: *mut RoutingTable, ip: uint32_t, prefix: uint32_t, index: uint32_t) {
+    let _tb = unsafe { &mut *ptr };
+    let _ip = Ipv4Addr::from(ip);
+    log(format!("Insert: {}/{} via {}", _ip, prefix, index));
+    _tb.insert(_ip, prefix, index);
+}
 
-    let result = tbm.longest_match(Ipv4Addr::new(10, 10, 10, 10));
-    assert_eq!(result, Some((Ipv4Addr::new(10, 0, 0, 0), 8, &100002)));
+#[no_mangle]
+pub extern fn rt_remove(ptr: *mut RoutingTable, ip: uint32_t, prefix: uint32_t) {
+    let _tb = unsafe { &mut *ptr };
+    let _ip = Ipv4Addr::from(ip);
+    log(format!("Remove: {}/{}", _ip, prefix));
+    _tb.remove(_ip, prefix);
+}
 
-    let result = tbm.longest_match(Ipv4Addr::new(100, 100, 100, 100));
-    assert_eq!(result, Some((Ipv4Addr::new(100, 64, 0, 0), 10, &100004)));
-
-    let result = tbm.longest_match(Ipv4Addr::new(100, 64, 0, 100));
-    assert_eq!(result, Some((Ipv4Addr::new(100, 64, 0, 0), 24, &10064024)));
-
-    let result = tbm.longest_match(Ipv4Addr::new(200, 200, 200, 200));
-    assert_eq!(result, None);
-    true
+#[no_mangle]
+pub extern fn rt_lookup(ptr: *mut RoutingTable, ip: uint32_t) -> uint32_t {
+    let _tb = unsafe { &mut *ptr };
+    let _ip = Ipv4Addr::from(ip);
+    let result = _tb.longest_match(_ip);
+    let index = match result {
+        Some((_, _, index)) => index.clone(),
+        None => 0, // 0 means not found
+    };
+    log(format!("Lookup: {} via {}", _ip, index));
+    index
 }
