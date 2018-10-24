@@ -11,7 +11,7 @@
 
 int main() {
 
-    void *table = rt_init();
+    routing_table_t table = rt_init();
 
     rt_insert(table, IP("10.0.0.0"), 8, 1);
     rt_insert(table, IP("100.64.0.0"), 24, 2);
