@@ -1,9 +1,9 @@
 
-#include "arpfind.h"
-#include "checksum.h"
-#include "lookuproute.h"
-#include "recvroute.h"
-#include "sendetherip.h"
+#include "arp_find.h"
+#include "check_sum.h"
+#include "lookup_route.h"
+#include "recv_route.h"
+#include "send_ether_ip.h"
 #include <pthread.h>
 
 #define IP_HEADER_LEN sizeof(struct ip)
@@ -48,7 +48,6 @@ void *thr_fn(void *arg) {
 int main() {
 
     char skbuf[1500];
-    char data[1480];
     int recvfd, recvlen, datalen;
     struct ip *ip_recv_header;
     pthread_t tid;
@@ -85,10 +84,6 @@ int main() {
             if (ip_recv_header->ip_src.s_addr == inet_addr("192.168.1.10") &&
                 ip_recv_header->ip_dst.s_addr == inet_addr("192.168.6.2")) {
 
-
-                // memset(data, 0, 1480);
-				// memcpy(data, skbuf + ETHER_IP_LEN, datalen);
-
 				uint16_t result = calculate_check_sum(ip_recv_header);
 
 				if (result != ip_recv_header->ip_sum) {
@@ -108,7 +103,7 @@ int main() {
                 // TODO: get MAC address from ARP table
                 // TODO: construct ip header
                 // TODO: construct ethernet header
-                // TODO: fill in date
+                // TODO: fill in data
                 // TODO: send by raw socket
 
             }

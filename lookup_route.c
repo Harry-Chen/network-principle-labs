@@ -1,5 +1,8 @@
-#include "lookuproute.h"
+#include "lookup_route.h"
 #include "routing_table/rt.h"
+
+#include <string.h>
+#include <stdlib.h>
 
 static routing_table_t routing_table;
 
@@ -11,8 +14,8 @@ void init_route() {
     routing_table = rt_init();
 }
 
-int insert_route(unsigned long ip_prefix, unsigned int prefix_len, char *if_name,
-                 unsigned int if_index, unsigned long nexthop_addr) {
+int insert_route(uint32_t ip_prefix, uint32_t prefix_len, char *if_name,
+                 uint32_t if_index, uint32_t nexthop_addr) {
 
     struct route* item = (struct route*) malloc(sizeof(struct route));
     (item->ip_prefix).s_addr = ip_prefix;
@@ -48,7 +51,7 @@ int lookup_route(struct in_addr dst_addr, struct nextaddr *nexthop_info) {
     return 0;
 }
 
-int delete_route(struct in_addr dst_addr, unsigned int prefix_len) {
+int delete_route(struct in_addr dst_addr, uint32_t prefix_len) {
     rt_remove(routing_table, ntohl(dst_addr.s_addr), prefix_len);
     return 0;
 }
