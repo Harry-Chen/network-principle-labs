@@ -9,7 +9,7 @@
 #define IP_HEADER_LEN sizeof(struct ip)
 #define ETHER_HEADER_LEN sizeof(struct ether_header)
 
-//接收路由信息的线程
+// thread to receive routing table change
 void *thr_fn(void *arg) {
     int st = 0;
     struct selfroute *selfrt;
@@ -53,7 +53,7 @@ int main() {
     pthread_t tid;
     ip_recv_header = (struct ip *)malloc(sizeof(struct ip));
 
-    // 创建raw socket套接字
+    // use raw socket to capture ip packets
     if ((recvfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP))) == -1) {
         printf("Raw socket open error\n");
         return -1;
@@ -64,14 +64,13 @@ int main() {
 
     // TODO: insert link routes to routing table
 
-    //创建线程去接收路由信息
+    // use thread to receive routing table change from quagga
     int pd = pthread_create(&tid, NULL, thr_fn, NULL);
 
     struct nextaddr *nexthopinfo = (struct nextaddr *) malloc(sizeof(struct nextaddr));
     macaddr_t mac_addr;
     
     while (1) {
-        //接收ip数据包模块
         recvlen = recv(recvfd, skbuf, sizeof(skbuf), 0);
         if (recvlen > 0) {
 
