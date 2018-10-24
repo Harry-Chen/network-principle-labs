@@ -2,7 +2,6 @@
 name = "routing_table"
 version = "0.1.0"
 authors = ["Harry Chen <i@harrychen.xyz>"]
-edition = "2018"
 
 [dependencies]
 treebitmap = { git = "https://github.com/hroi/treebitmap/" }
