@@ -36,17 +36,17 @@ void *thr_fn(void *arg) {
                     ifni++;
                 }
 
-                {
-                    //插入到路由表里
-                }
+                // TODO: insert to routing table
+
             } else if (selfrt->cmdnum == 25) {
-                //从路由表里删除路由
+                // TODO: delete from routing table
             }
         }
     }
 }
 
 int main() {
+
     char skbuf[1500];
     char data[1480];
     int recvfd, datalen;
@@ -61,14 +61,8 @@ int main() {
         return -1;
     }
 
-    //路由表初始化
-    route_table = (struct route *)malloc(sizeof(struct route));
-
-    if (route_table == NULL) {
-        printf("malloc error!!\n");
-        return -1;
-    }
-    memset(route_table, 0, sizeof(struct route));
+    // initialize routing table
+    init_route();
 
     {
 
@@ -91,7 +85,8 @@ int main() {
             // 192.168.6.2是测试时候ping的目的地址。与静态路由相对应。
             if (ip_recvpkt->ip_src.s_addr == inet_addr("192.168.1.10") &&
                 ip_recvpkt->ip_dst.s_addr == inet_addr("192.168.6.2")) {
-                //分析打印ip数据包的源和目的ip地址
+                
+				//分析打印ip数据包的源和目的ip地址
                 //	analyseIP(ip_recvpkt);
 
                 int s;
@@ -101,42 +96,40 @@ int main() {
                 }
 
                 // 校验计算模块
-                struct _iphdr *iphead;
-                int c = 0;
+                struct _iphdr *ip_head;
+                ip_head = (struct _iphdr *)malloc(sizeof(struct _iphdr));
 
-                iphead = (struct _iphdr *)malloc(sizeof(struct _iphdr));
+				int result = 0;
 
-                {
+                // TODO: calculate checksum
 
-                    //调用校验函数check_sum，成功返回1
-                }
-                if (c == 1) {
-                    printf("checksum is ok!!\n");
-                } else {
-                    printf("checksum is error !!\n");
-                    return -1;
-                }
 
-                {
-
-                    //调用计算校验和函数count_check_sum，返回新的校验和
-                }
+				if (result == 1) {
+					printf("checksum is error !!\n");
+					continue;
+				}
+				printf("checksum is ok!!\n");
+                
+				// TODO: decrease TTL
+				// TODO: calculate checksum by count_check_sum
 
                 //查找路由表，获取下一跳ip地址和出接口模块
                 struct nextaddr *nexthopinfo;
                 nexthopinfo =
                     (struct nextaddr *)malloc(sizeof(struct nextaddr));
                 memset(nexthopinfo, 0, sizeof(struct nextaddr));
-                {
+                result = lookup_route(ip_recvpkt->ip_dst, nexthopinfo);
 
-                    //调用查找路由函数lookup_route，获取下一跳ip地址和出接口
-                }
+				if (result == 1) {
+					// no match
+				}
 
                 // arp find
                 struct arpmac *srcmac;
                 srcmac = (struct arpmac *)malloc(sizeof(struct arpmac));
                 memset(srcmac, 0, sizeof(struct arpmac));
-                {
+                
+				{
 
                     //调用arpGet获取下一跳的mac地址
                 }

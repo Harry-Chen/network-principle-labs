@@ -7,29 +7,28 @@
 #include <unistd.h>
 
 struct route {
-    struct route *next;
-    struct in_addr ip4prefix;
-    unsigned int prefixlen;
+    struct in_addr ip_prefix;
+    unsigned int prefix_len;
     struct nexthop *nexthop;
 };
 
 struct nexthop {
     struct nexthop *next;
-    char *ifname;
-    unsigned int ifindex; // zlw ifindex2ifname()获取出接�?   // Nexthop address
-    struct in_addr nexthopaddr;
+    char *if_name;
+    unsigned int if_index;
+    struct in_addr addr;
 };
 
 struct nextaddr {
-    char *ifname;
-    struct in_addr ipv4addr;
-    unsigned int prefixl;
+    char *if_name;
+    struct in_addr addr;
+    unsigned int prefix_len;
 };
 
-struct route *route_table;
-int insert_route(unsigned long ip4prefix, unsigned int prefixlen, char *ifname,
-                 unsigned int ifindex, unsigned long nexthopaddr);
-int lookup_route(struct in_addr dstaddr, struct nextaddr *nexthopinfo);
-int delete_route(struct in_addr dstaddr, unsigned int prefixlen);
+void init_route();
+int insert_route(unsigned long ip_prefix, unsigned int prefix_len, char *if_name,
+                 unsigned int if_index, unsigned long nexthop_addr);
+int lookup_route(struct in_addr dst_addr, struct nextaddr *nexthop_info);
+int delete_route(struct in_addr dst_addr, unsigned int prefix_len);
 
 #endif
