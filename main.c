@@ -68,7 +68,7 @@ int main() {
     int pd = pthread_create(&tid, NULL, thr_fn, NULL);
 
     struct nextaddr *nexthopinfo = (struct nextaddr *) malloc(sizeof(struct nextaddr));
-    struct arpmac *srcmac = (struct arpmac *)malloc(sizeof(struct arpmac));
+    macaddr_t mac_addr;
     
     while (1) {
         //接收ip数据包模块

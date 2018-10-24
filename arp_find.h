@@ -1,11 +1,8 @@
 #ifndef __ARP__
 #define __ARP__
 
-struct arpmac {
-    unsigned char *mac;
-    unsigned int index;
-};
+typedef unsigned char macaddr_t[6];
 
-int arp_get(struct arpmac *srcmac, char *ifname, char *ip_str);
+int arp_get(macaddr_t mac, char *ifname, char *ip_str);
 
 #endif

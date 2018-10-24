@@ -1,26 +1,18 @@
 #ifndef __RECVROUTE__
 #define __RECVROUTE__
+
+#include <stdint.h>
+
 #include <arpa/inet.h>
-#include <linux/if_ether.h>
-#include <net/route.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/ip_icmp.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <net/if.h>
 
 struct selfroute {
-    u_char prefixlen;
+    uint32_t prefixlen;
     struct in_addr prefix;
-    unsigned int ifindex;
+    uint32_t ifindex;
     struct in_addr nexthop;
-    unsigned int cmdnum;
-    char ifname[10];
+    uint32_t cmdnum;
+    char ifname[IFNAMSIZ];
 } buf2;
 
 int static_route_get(struct selfroute *selfrt);

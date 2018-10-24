@@ -1,5 +1,8 @@
 #ifndef __SEND__
 #define __SEND__
+
+#include "arp_find.h"
+
 #include <arpa/inet.h>
 #include <net/ethernet.h>
 #include <net/if.h>
@@ -26,8 +29,7 @@
 /* IP地址长度 */
 #define IP_ADDR_LEN 4
 
-struct ip *fill_ip_packet(struct ip *ip_packet, unsigned short checksum);
 void ip_transmit(struct ip *ip_packet, unsigned short checksum, char *name,
-                 unsigned char *nextmac, char *bufdata, int datalength);
+                 macaddr_t nextmac, char *bufdata, int datalength);
 
 #endif
