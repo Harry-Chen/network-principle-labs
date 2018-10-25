@@ -9,6 +9,8 @@
 #define IP_HEADER_LEN sizeof(struct ip)
 #define ETHER_HEADER_LEN sizeof(struct ether_header)
 
+#define DEBUG(...) printf(__VA_ARGS__)
+
 // thread to receive routing table change
 void *thr_fn(void *arg) {
     int st = 0;
@@ -83,7 +85,7 @@ int main() {
 
             datalen = recvlen - ETHER_HEADER_LEN - header_length;
 
-            printf("Received IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
+            DEBUG("Received IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
 
             // 192.168.1.10是测试服务器的IP，现在测试服务器IP是192.168.1.10到192.168.1.80.
             //使用不同的测试服务器要进行修改对应的IP。然后再编译。
@@ -92,23 +94,23 @@ int main() {
             //     ip_recv_header->ip_dst.s_addr == inet_addr("192.168.6.2")) {
 
                 uint16_t result = calculate_check_sum(ip_recv_header);
-                printf("Checksum is %x", result);
+                DEBUG("Checksum is %x", result);
 
                 if (result != ip_recv_header->ip_sum) {
-                    printf(", should be %x.\n", ip_recv_header->ip_sum);
+                    DEBUG(", should be %x.\n", ip_recv_header->ip_sum);
                     continue;
                 }
-                printf(", OK!\n");
+                DEBUG(", OK!\n");
 
                 result = lookup_route(ip_recv_header->ip_dst, &nexthopinfo);
 
                 if (result == 1) {
-                    printf("Route not found for %s\n", ip_addr_to);
+                    DEBUG("Route not found for %s\n", ip_addr_to);
                     continue;
                 }
 
                 inet_ntop(AF_INET, &(nexthopinfo.addr), ip_addr_from, INET_ADDRSTRLEN);
-                printf("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.if_name, nexthopinfo.prefix_len);
+                DEBUG("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.if_name, nexthopinfo.prefix_len);
 
 
                 // TODO: get MAC address from ARP table
