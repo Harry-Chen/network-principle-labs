@@ -56,7 +56,7 @@ int main() {
 
     // use raw socket to capture ip packets
     if ((recvfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP))) == -1) {
-        printf("Raw socket open error\n");
+        printf("Error opening raw socket for IP packet\n");
         return -1;
     }
 
@@ -80,10 +80,12 @@ int main() {
             inet_ntop(AF_INET, &(ip_recv_header->ip_src.s_addr), ip_addr_from, INET_ADDRSTRLEN);
             inet_ntop(AF_INET, &(ip_recv_header->ip_dst.s_addr), ip_addr_to, INET_ADDRSTRLEN);
 
+            uint16_t length_in_header = ntohs(ip_recv_header->ip_len);
+
             printf("Received IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
             
-            if (ip_recv_header->ip_len != datalen) {
-                printf("Payload length in ip header does not match data received, should be %xu\n", ip_recv_header->ip_len);
+            if (length_in_header != datalen) {
+                printf("Payload length in ip header does not match data received, should be %d\n", length_in_header);
                 continue;
             }
 
@@ -94,10 +96,10 @@ int main() {
             //     ip_recv_header->ip_dst.s_addr == inet_addr("192.168.6.2")) {
 
                 uint16_t result = calculate_check_sum(ip_recv_header);
-                printf("Checksum is %xu", result);
+                printf("Checksum is %x", result);
 
                 if (result != ip_recv_header->ip_sum) {
-                    printf(", should be %xu.\n", ip_recv_header->ip_sum);
+                    printf(", should be %x.\n", ip_recv_header->ip_sum);
                     continue;
                 }
                 printf(", OK!\n");
