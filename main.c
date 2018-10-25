@@ -52,6 +52,7 @@ int main() {
     struct ip *ip_recv_header;
     pthread_t tid;
     ip_recv_header = (struct ip *)malloc(sizeof(struct ip));
+    char ip_addr_from[INET_ADDRSTRLEN], ip_addr_to[INET_ADDRSTRLEN];
 
     // use raw socket to capture ip packets
     if ((recvfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP))) == -1) {
@@ -76,27 +77,37 @@ int main() {
 
             ip_recv_header = (struct ip *)(skbuf + ETHER_HEADER_LEN);
             datalen = recvlen - ETHER_IP_LEN;
+            inet_ntop(AF_INET, &(ip_recv_header->ip_src.s_addr), ip_addr_from, INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(ip_recv_header->ip_dst.s_addr), ip_addr_to, INET_ADDRSTRLEN);
+
+            printf("Received IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
+            
+            if (ip_recv_header->ip_len != datalen) {
+                printf("Payload length in ip header does not match data received, should be %xu\n", ip_recv_header->ip_len);
+                continue;
+            }
 
             // 192.168.1.10是测试服务器的IP，现在测试服务器IP是192.168.1.10到192.168.1.80.
             //使用不同的测试服务器要进行修改对应的IP。然后再编译。
             // 192.168.6.2是测试时候ping的目的地址。与静态路由相对应。
-            if (ip_recv_header->ip_src.s_addr == inet_addr("192.168.1.10") &&
-                ip_recv_header->ip_dst.s_addr == inet_addr("192.168.6.2")) {
+            // if (ip_recv_header->ip_src.s_addr == inet_addr("192.168.1.10") &&
+            //     ip_recv_header->ip_dst.s_addr == inet_addr("192.168.6.2")) {
 
-				uint16_t result = calculate_check_sum(ip_recv_header);
+                uint16_t result = calculate_check_sum(ip_recv_header);
+                printf("Checksum is %xu", result);
 
-				if (result != ip_recv_header->ip_sum) {
-					printf("checksum is error !!\n");
-					continue;
-				}
-				printf("checksum is ok!!\n");
+                if (result != ip_recv_header->ip_sum) {
+                    printf(", should be %xu.\n", ip_recv_header->ip_sum);
+                    continue;
+                }
+                printf(", OK!\n");
 
                 result = lookup_route(ip_recv_header->ip_dst, nexthopinfo);
 
-				if (result == 1) {
-					printf("route not found.\n");
+                if (result == 1) {
+                    printf("Route not found for \n");
                     continue;
-				}
+                }
 
 
                 // TODO: get MAC address from ARP table
@@ -105,7 +116,7 @@ int main() {
                 // TODO: fill in data
                 // TODO: send by raw socket
 
-            }
+            // }
         }
     }
 

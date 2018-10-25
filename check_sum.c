@@ -8,15 +8,10 @@ uint16_t calculate_check_sum(struct ip* ip_header) {
     uint16_t *buf = (uint16_t *) ip_header;
     uint32_t sum = 0;
 
-    int counter = (ip_header->ip_v & 0xF) * 4;
+    int counter = (ip_header->ip_hl) * 2;
 
-    while (counter > 1) {
+    while (counter--) {
         sum += *buf++;
-        counter -= 2;
-    }
-
-    if (counter == 1) {
-        sum += * (uint8_t *) buf;
     }
 
     while (sum >> 16) {
