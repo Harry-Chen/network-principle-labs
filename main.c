@@ -12,35 +12,20 @@
 #define DEBUG(...) printf(__VA_ARGS__)
 
 // thread to receive routing table change
-void *thr_fn(void *arg) {
+void *receive_rt_change(void *arg) {
+    DEBUG("Thread started to receive routing table change.\n");
     int st = 0;
-    struct selfroute *selfrt;
-    selfrt = (struct selfroute *)malloc(sizeof(struct selfroute));
-    memset(selfrt, 0, sizeof(struct selfroute));
-
-    // get if.name
-    struct if_nameindex *head, *ifni;
-    ifni = if_nameindex();
-    head = ifni;
-    char *ifname;
+    struct selfroute selfrt;
+    char ifname[IF_NAMESIZE];
 
     // add-24 del-25
     while (1) {
-        st = static_route_get(selfrt);
+        st = static_route_get(&selfrt);
         if (st == 1) {
-            if (selfrt->cmdnum == 24) {
-                while (ifni->if_index != 0) {
-                    if (ifni->if_index == selfrt->ifindex) {
-                        printf("if_name is %s\n", ifni->if_name);
-                        ifname = ifni->if_name;
-                        break;
-                    }
-                    ifni++;
-                }
-
+            if_indextoname(selfrt.ifindex, ifname);
+            if (selfrt.cmdnum == 24) {
                 // TODO: insert to routing table
-
-            } else if (selfrt->cmdnum == 25) {
+            } else if (selfrt.cmdnum == 25) {
                 // TODO: delete from routing table
             }
         }
@@ -68,7 +53,7 @@ int main() {
     // TODO: insert link routes to routing table
 
     // use thread to receive routing table change from quagga
-    int pd = pthread_create(&tid, NULL, thr_fn, NULL);
+    int pd = pthread_create(&tid, NULL, receive_rt_change, NULL);
 
     struct nextaddr nexthopinfo;
     macaddr_t mac_addr;
