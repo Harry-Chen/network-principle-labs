@@ -76,18 +76,14 @@ int main() {
         if (recvlen > 0) {
 
             ip_recv_header = (struct ip *)(skbuf + ETHER_HEADER_LEN);
-            datalen = recvlen - ETHER_IP_LEN;
             inet_ntop(AF_INET, &(ip_recv_header->ip_src.s_addr), ip_addr_from, INET_ADDRSTRLEN);
             inet_ntop(AF_INET, &(ip_recv_header->ip_dst.s_addr), ip_addr_to, INET_ADDRSTRLEN);
 
-            uint16_t length_in_header = ntohs(ip_recv_header->ip_len);
+            uint16_t header_length = ntohs(ip_recv_header->ip_hl) * 4;
+
+            datalen = recvlen - ETHER_HEADER_LEN - header_length;
 
             printf("Received IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
-            
-            if (length_in_header != datalen) {
-                printf("Payload length in ip header does not match data received, should be %d\n", length_in_header);
-                continue;
-            }
 
             // 192.168.1.10是测试服务器的IP，现在测试服务器IP是192.168.1.10到192.168.1.80.
             //使用不同的测试服务器要进行修改对应的IP。然后再编译。
