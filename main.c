@@ -68,7 +68,7 @@ int main() {
     // use thread to receive routing table change from quagga
     int pd = pthread_create(&tid, NULL, thr_fn, NULL);
 
-    struct nextaddr *nexthopinfo = (struct nextaddr *) malloc(sizeof(struct nextaddr));
+    struct nextaddr nexthopinfo;
     macaddr_t mac_addr;
     
     while (1) {
@@ -79,7 +79,7 @@ int main() {
             inet_ntop(AF_INET, &(ip_recv_header->ip_src.s_addr), ip_addr_from, INET_ADDRSTRLEN);
             inet_ntop(AF_INET, &(ip_recv_header->ip_dst.s_addr), ip_addr_to, INET_ADDRSTRLEN);
 
-            uint16_t header_length = ntohs(ip_recv_header->ip_hl) * 4;
+            uint16_t header_length = ip_recv_header->ip_hl * 4;
 
             datalen = recvlen - ETHER_HEADER_LEN - header_length;
 
@@ -100,12 +100,15 @@ int main() {
                 }
                 printf(", OK!\n");
 
-                result = lookup_route(ip_recv_header->ip_dst, nexthopinfo);
+                result = lookup_route(ip_recv_header->ip_dst, &nexthopinfo);
 
                 if (result == 1) {
-                    printf("Route not found for \n");
+                    printf("Route not found for %s\n", ip_addr_to);
                     continue;
                 }
+
+                inet_ntop(AF_INET, &(nexthopinfo.addr), ip_addr_from, INET_ADDRSTRLEN);
+                printf("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.if_name, nexthopinfo.prefix_len);
 
 
                 // TODO: get MAC address from ARP table
