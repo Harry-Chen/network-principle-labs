@@ -1,8 +1,6 @@
 extern crate treebitmap;
 extern crate libc;
 
-// #[macro_use] extern crate log;
-
 use libc::uint32_t;
 use std::net::Ipv4Addr;
 
@@ -16,6 +14,7 @@ pub fn log(str: String) {
 
 #[no_mangle]
 pub extern fn rt_init() -> *mut RoutingTable {
+    log(format!("{}", "Init"));
     let _ptr = unsafe { std::mem::transmute(Box::new(RoutingTable::new())) };
     _ptr
 }
@@ -47,4 +46,11 @@ pub extern fn rt_lookup(ptr: *mut RoutingTable, ip: uint32_t) -> uint32_t {
     };
     log(format!("Lookup: {} via {}", _ip, index));
     index
+}
+
+#[no_mangle]
+pub extern fn rt_cleanup(ptr: *mut RoutingTable) {
+    log(format!("{}", "Cleanup"));
+    let _tb: Box<RoutingTable> = unsafe{ std::mem::transmute(ptr) };
+    // drop this object
 }

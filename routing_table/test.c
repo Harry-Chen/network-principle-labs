@@ -12,7 +12,9 @@
 int main() {
 
     routing_table_t table = rt_init();
+    assert(rt_init != NULL);
 
+    // insert some routes
     rt_insert(table, IP("10.0.0.0"), 8, 1);
     rt_insert(table, IP("100.64.0.0"), 24, 2);
     rt_insert(table, IP("100.64.1.0"), 24, 3);
@@ -20,6 +22,7 @@ int main() {
 
     uint32_t result;
 
+    // find some existed routes
     result = rt_lookup(table, IP("10.10.10.10"));
     assert(result == 1);
 
@@ -29,10 +32,21 @@ int main() {
     result = rt_lookup(table, IP("100.64.0.100"));
     assert(result == 2);
 
-    // default
+    // default: not found
     result = rt_lookup(table, IP("200.200.200.200"));
     assert(result == 0);
 
+    // default: should be found now
+    rt_insert(table, IP("0.0.0.0"), 0, 5);
+    result = rt_lookup(table, IP("200.200.200.200"));
+    assert(result == 5);
+
+    // default: not found again
+    rt_remove(table, IP("0.0.0.0"), 0);
+    result = rt_lookup(table, IP("200.200.200.200"));
+    assert(result == 0);
+
+    rt_cleanup(table);
 
     printf("Routing table test passed!\n");
 
