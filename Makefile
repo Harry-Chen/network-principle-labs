@@ -7,6 +7,10 @@ EXE    := main
 CC      := ${CROSS_COMPILE}gcc
 CFLAGS  := -O2 -g -Wall
 
+ifdef SPEEDUP
+CFLAGS  += -DSPEEDUP
+endif
+
 LIB_NAME := routing_table
 
 all: $(EXE)

@@ -17,7 +17,7 @@
 
 // thread to receive routing table change
 void *receive_rt_change(void *arg) {
-    DEBUG("Thread started to receive routing table change.\n");
+    printf("Thread started to receive routing table change.\n");
     int st = 0;
     struct selfroute selfrt;
     char ifname[IF_NAMESIZE];
@@ -81,6 +81,7 @@ int main() {
             DEBUG("\nReceived IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
 
 
+#ifndef SPEEDUP
             // verify checksum
             uint16_t result = calculate_check_sum(ip_recv_header);
             DEBUG("Checksum is %x", result);
@@ -90,6 +91,7 @@ int main() {
                 continue;
             }
             DEBUG(", OK!\n");
+#endif
 
 
             // lookup next hop in routing table
@@ -121,9 +123,14 @@ int main() {
                 DEBUG("TTL decreased to 0, goodbye.\n");
                 continue;
             }
+            
+#ifndef SPEEDUP
             uint16_t new_checksum = calculate_check_sum(ip_recv_header);
             DEBUG("New checksum of packet is %x\n", new_checksum);
             ip_recv_header->ip_sum = new_checksum;
+#else
+            ip_recv_header->ip_sum += 1;
+#endif
 
 
             // get MAC address of next hop from ARP table
