@@ -39,7 +39,7 @@ void *receive_rt_change(void *arg) {
 int main() {
 
     // 1500 BYTES IS NOT ENOUGH! DON'T TRUST TA!
-    char skbuf[65535];
+    char skbuf[1514];
     int recvfd, sendfd;
     uint16_t recvlen, datalen;
 
