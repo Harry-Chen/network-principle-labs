@@ -9,7 +9,11 @@
 
 #include <pthread.h>
 
+#ifndef SPEEDUP
 #define DEBUG(...) printf(__VA_ARGS__)
+#else
+#define DEBUG(...) do{} while(0)
+#endif
 
 // thread to receive routing table change
 void *receive_rt_change(void *arg) {
@@ -106,8 +110,10 @@ int main() {
                 continue;
             }
 
+#ifndef SPEEDUP
             inet_ntop(AF_INET, &(nexthopinfo.host.addr), ip_addr_from, INET_ADDRSTRLEN);
-            DEBUG("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.host.if_name, nexthopinfo.prefix_len);
+            printf("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.host.if_name, nexthopinfo.prefix_len);
+#endif
 
 
             // construct ip header

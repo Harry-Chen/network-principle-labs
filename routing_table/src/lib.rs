@@ -8,9 +8,13 @@ use treebitmap::*;
 
 type RoutingTable = IpLookupTable<Ipv4Addr, u32>;
 
+#[cfg(not(feature = "speedup"))]
 pub fn log(str: String) {
     println!("[RT]{}", str);
 }
+
+#[cfg(feature = "speedup")]
+pub fn log(_str: String) { }
 
 #[no_mangle]
 pub extern fn rt_init() -> *mut RoutingTable {
