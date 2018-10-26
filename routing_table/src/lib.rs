@@ -9,16 +9,20 @@ use treebitmap::*;
 type RoutingTable = IpLookupTable<Ipv4Addr, u32>;
 
 #[cfg(not(feature = "speedup"))]
-pub fn log(str: String) {
-    println!("[RT]{}", str);
+macro_rules! log {
+    ($($x:expr),*) => {
+        println!($($x),*);
+    };
 }
 
 #[cfg(feature = "speedup")]
-pub fn log(_str: String) { }
+macro_rules! log {
+    ($($x:expr),*) => { };
+}
 
 #[no_mangle]
 pub extern fn rt_init() -> *mut RoutingTable {
-    log(format!("{}", "Init"));
+    log!("{}", "Init");
     let _ptr = unsafe { std::mem::transmute(Box::new(RoutingTable::new())) };
     _ptr
 }
@@ -27,7 +31,7 @@ pub extern fn rt_init() -> *mut RoutingTable {
 pub extern fn rt_insert(ptr: *mut RoutingTable, ip: uint32_t, prefix: uint32_t, index: uint32_t) {
     let _tb = unsafe { &mut *ptr };
     let _ip = Ipv4Addr::from(ip);
-    log(format!("Insert: {}/{} via {}", _ip, prefix, index));
+    log!("Insert: {}/{} via {}", _ip, prefix, index);
     _tb.insert(_ip, prefix, index);
 }
 
@@ -35,7 +39,7 @@ pub extern fn rt_insert(ptr: *mut RoutingTable, ip: uint32_t, prefix: uint32_t, 
 pub extern fn rt_remove(ptr: *mut RoutingTable, ip: uint32_t, prefix: uint32_t) {
     let _tb = unsafe { &mut *ptr };
     let _ip = Ipv4Addr::from(ip);
-    log(format!("Remove: {}/{}", _ip, prefix));
+    log!("Remove: {}/{}", _ip, prefix);
     _tb.remove(_ip, prefix);
 }
 
@@ -48,13 +52,13 @@ pub extern fn rt_lookup(ptr: *mut RoutingTable, ip: uint32_t) -> uint32_t {
         Some((_, _, index)) => index.clone(),
         None => 0, // 0 means not found
     };
-    log(format!("Lookup: {} via {}", _ip, index));
+    log!("Lookup: {} via {}", _ip, index);
     index
 }
 
 #[no_mangle]
 pub extern fn rt_cleanup(ptr: *mut RoutingTable) {
-    log(format!("{}", "Cleanup"));
+    log!("{}", "Cleanup");
     let _tb: Box<RoutingTable> = unsafe{ std::mem::transmute(ptr) };
     // drop this object
 }
