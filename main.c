@@ -137,7 +137,7 @@ int main() {
 
             // get MAC address of next hop from ARP table
             macaddr_t mac_addr_to, *mac_addr_from;
-            result = arp_get_mac(mac_addr_to, nexthopinfo.host.if_name, ip_addr_from);
+            result = arp_get_mac(arp_fd, mac_addr_to, nexthopinfo.host.if_name, ip_addr_from);
 
             if (result == 2) {
                 DEBUG("Lookup ARP table failed, maybe next hop is unreachable or myself?\n");
@@ -152,7 +152,7 @@ int main() {
 
 
             //get MAC address of source interface
-            get_mac_interface(arp_fd, &mac_addr_from, nexthopinfo.host.if_index);
+            get_mac_interface(&mac_addr_from, nexthopinfo.host.if_index);
 
             DEBUG("Source MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
                 *mac_addr_from[0], *mac_addr_from[1], *mac_addr_from[2], *mac_addr_from[3], *mac_addr_from[4], *mac_addr_from[5]);
