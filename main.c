@@ -113,11 +113,8 @@ int main() {
                 continue;
             }
 
-#ifndef SPEEDUP
             inet_ntop(AF_INET, &(nexthopinfo.host.addr), ip_addr_from, INET_ADDRSTRLEN);
-            printf("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.host.if_name, nexthopinfo.prefix_len);
-#endif
-
+            DEBUG("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.host.if_name, nexthopinfo.prefix_len);
 
             // construct ip header
             if (--ip_recv_header->ip_ttl == 0) {
