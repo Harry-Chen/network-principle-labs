@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-int arp_get_mac(macaddr_t mac, char *if_name, char *ip_str) { 
+int arp_get_mac(int sock_fd, macaddr_t mac, char *if_name, char *ip_str) { 
 
     struct arpreq arp_req;
     struct sockaddr_in *sin;
@@ -14,9 +14,7 @@ int arp_get_mac(macaddr_t mac, char *if_name, char *ip_str) {
     inet_pton(AF_INET, ip_str, &(sin->sin_addr));
     strncpy(arp_req.arp_dev, if_name, IF_NAMESIZE - 1);
 
-    int sfd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    int ret = ioctl(sfd, SIOCGARP, &arp_req);
+    int ret = ioctl(sock_fd, SIOCGARP, &arp_req);
     if (ret < 0) {
         fprintf(stderr, "Get ARP entry failed for %s @%s : %s\n", ip_str, if_name, strerror(errno));
         exit(EXIT_FAILURE);
@@ -29,7 +27,6 @@ int arp_get_mac(macaddr_t mac, char *if_name, char *ip_str) {
         ret = 1;
     }
     
-    close(sfd);
     return ret;
 
 }

@@ -40,7 +40,7 @@ int main() {
 
     // 1500 BYTES IS NOT ENOUGH! DON'T TRUST TA!
     char skbuf[65535];
-    int recvfd, sendfd;
+    int recvfd, sendfd, arp_fd;
     uint16_t recvlen, datalen;
 
     // use raw socket to capture and send ip packets
@@ -52,6 +52,8 @@ int main() {
         printf("Error opening raw socket for sending IP packet\n");
         return -1;
     }
+
+    arp_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
 
     // initialize routing table
@@ -135,7 +137,7 @@ int main() {
 
             // get MAC address of next hop from ARP table
             macaddr_t mac_addr_to, *mac_addr_from;
-            result = arp_get_mac(mac_addr_to, nexthopinfo.host.if_name, ip_addr_from);
+            result = arp_get_mac(arp_fd, mac_addr_to, nexthopinfo.host.if_name, ip_addr_from);
 
             if (result == 2) {
                 DEBUG("Lookup ARP table failed, maybe next hop is unreachable or myself?\n");
@@ -184,5 +186,6 @@ int main() {
     pthread_cancel(tid);
     close(recvfd);
     close(sendfd);
+    close(arp_fd);
     return 0;
 }
