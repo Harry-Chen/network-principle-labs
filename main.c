@@ -39,7 +39,7 @@ int main() {
     uint16_t recvlen, datalen;
 
     // use raw socket to capture and send ip packets
-    if ((recvfd = socket(AF_PACKET, SOCK_RAW, IPPROTO_IP)) == -1) {
+    if ((recvfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP))) == -1) {
         printf("Error opening raw socket for capturing IP packet\n");
         return -1;
     }
