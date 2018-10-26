@@ -97,13 +97,11 @@ int main() {
                 continue;
             }
 
-            if (nexthopinfo.host.addr.s_addr == 0u) {
-                // nexthop "0.0.0.0" means onlink
+            if (nexthopinfo.host.addr.s_addr == NEXTHOP_ONLINK) {
                 nexthopinfo.host.addr.s_addr = ip_recv_header->ip_dst.s_addr;
             }
 
-            if (nexthopinfo.host.addr.s_addr == UINT32_MAX) {
-                // nexthop "255.255.255.255" means ignoring
+            if (nexthopinfo.host.addr.s_addr == NEXTHOP_SELF) {
                 DEBUG("Packet to local address, ignored.\n");
                 continue;
             }

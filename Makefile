@@ -17,7 +17,7 @@ $(EXE): $(OBJS) $(LIB_NAME)/target/release/lib$(LIB_NAME).a
 $(LIB_NAME)/target/release/lib$(LIB_NAME).a:
 	$(MAKE) -C $(LIB_NAME)
 
-%.o: %.c %.h
+%.o: %.c %.h common.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean :

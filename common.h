@@ -15,5 +15,10 @@
 #include <net/if.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
+#include <netdb.h>
+#include <ifaddrs.h>
+
+#define NEXTHOP_ONLINK UINT32_MAX
+#define NEXTHOP_SELF 0
 
 #endif
