@@ -60,7 +60,7 @@ void init_local_interfaces() {
             uint32_t prefix = ntohl(mask->s_addr);
             inet_ntop(AF_INET, &(addr->s_addr), ip_addr, INET_ADDRSTRLEN);
             uint32_t prefix_len = sizeof(uint32_t) - __builtin_ctz(prefix);
-            printf(" with IPv4 address: %s/%d\n", host, ip_addr);
+            printf(" with IPv4 address: %s/%d\n", ip_addr, prefix_len);
         }
     }
  
