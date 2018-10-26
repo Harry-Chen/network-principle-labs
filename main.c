@@ -59,8 +59,9 @@ void init_local_interfaces() {
             struct in_addr *mask = &((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr;
             uint32_t prefix = ntohl(mask->s_addr);
             inet_ntop(AF_INET, &(addr->s_addr), ip_addr, INET_ADDRSTRLEN);
-            uint32_t prefix_len = sizeof(uint32_t) - __builtin_ctz(prefix);
+            uint32_t prefix_len = 32 - __builtin_ctz(prefix);
             printf(" with IPv4 address: %s/%d\n", ip_addr, prefix_len);
+            insert_route(addr->s_addr, prefix_len, ifa->ifa_name, if_nametoindex(ifa->ifa_name), UINT32_MAX);
         }
     }
  
