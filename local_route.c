@@ -41,6 +41,9 @@ void init_local_interfaces() {
             inet_ntop(AF_INET, &(addr->s_addr), ip_addr, INET_ADDRSTRLEN);
             uint32_t prefix_len = 32 - __builtin_ctz(prefix);
             printf(" with IPv4 address: %s/%d\n", ip_addr, prefix_len);
+
+            // insert link-scope and local-address routes
+            insert_route(addr->s_addr, 32, ifa->ifa_name, if_index, 0);
             insert_route(addr->s_addr, prefix_len, ifa->ifa_name, if_index, UINT32_MAX);
 
             strcpy(if_info[if_index].name, ifa->ifa_name);
