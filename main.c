@@ -35,13 +35,19 @@ void *receive_rt_change(void *arg) {
 int main() {
 
     char skbuf[1500];
-    int recvfd, recvlen, datalen;
+    int recvfd, sendfd;
+    uint16_t recvlen, datalen;
 
-    // use raw socket to capture ip packets
-    if ((recvfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP))) == -1) {
-        printf("Error opening raw socket for IP packet\n");
+    // use raw socket to capture and send ip packets
+    if ((recvfd = socket(AF_PACKET, SOCK_RAW, IPPROTO_IP)) == -1) {
+        printf("Error opening raw socket for capturing IP packet\n");
         return -1;
     }
+    if ((sendfd = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW)) == -1) {
+        printf("Error opening raw socket for sending IP packet\n");
+        return -1;
+    }
+
 
     // initialize routing table
     init_route();
@@ -90,19 +96,19 @@ int main() {
                 continue;
             }
 
-            if (nexthopinfo.addr.s_addr == 0u) {
+            if (nexthopinfo.host.addr.s_addr == 0u) {
                 // nexthop "0.0.0.0" means onlink
-                nexthopinfo.addr.s_addr = ip_recv_header->ip_dst.s_addr;
+                nexthopinfo.host.addr.s_addr = ip_recv_header->ip_dst.s_addr;
             }
 
-            if (nexthopinfo.addr.s_addr == UINT32_MAX) {
+            if (nexthopinfo.host.addr.s_addr == UINT32_MAX) {
                 // nexthop "255.255.255.255" means ignoring
                 DEBUG("Packet to local address, ignored.\n");
                 continue;
             }
 
-            inet_ntop(AF_INET, &(nexthopinfo.addr), ip_addr_from, INET_ADDRSTRLEN);
-            DEBUG("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.if_name, nexthopinfo.prefix_len);
+            inet_ntop(AF_INET, &(nexthopinfo.host.addr), ip_addr_from, INET_ADDRSTRLEN);
+            DEBUG("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.host.if_name, nexthopinfo.prefix_len);
 
 
             // construct ip header
@@ -117,7 +123,7 @@ int main() {
 
             // get MAC address of next hop from ARP table
             macaddr_t mac_addr_to, mac_addr_from;
-            result = arp_get_mac(mac_addr_to, nexthopinfo.if_name, ip_addr_from);
+            result = arp_get_mac(mac_addr_to, nexthopinfo.host.if_name, ip_addr_from);
 
             if (result == 2) {
                 DEBUG("Lookup ARP table failed, maybe nexthop unreachable or is myself?\n");
@@ -132,7 +138,7 @@ int main() {
 
 
             //get MAC address of source interface
-            result = if_get_mac(mac_addr_from, nexthopinfo.if_name);
+            result = if_get_mac(mac_addr_from, nexthopinfo.host.if_name);
 
             DEBUG("Source MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
                 mac_addr_from[0], mac_addr_from[1], mac_addr_from[2], mac_addr_from[3], mac_addr_from[4], mac_addr_from[5]);
@@ -146,11 +152,25 @@ int main() {
             // we do not touch the payload of ip packet
 
 
-            // TODO: send by raw socket
+            // send by raw socket
+            struct sockaddr_ll sadr_ll;
+            sadr_ll.sll_ifindex = nexthopinfo.host.if_index;
+            sadr_ll.sll_halen = ETH_ALEN;
+            memcpy(sadr_ll.sll_addr, mac_addr_to, ETH_ALEN);
+
+            result = sendto(sendfd, skbuf, 64, recvlen, (const struct sockaddr *) &sadr_ll, sizeof(struct sockaddr_ll));
+
+            if (result < 0) {
+                DEBUG("Send raw ip packet failed\n");
+            } else {
+                DEBUG("Send succeeded!\n");
+            }
+
         }
     }
 
     pthread_cancel(tid);
     close(recvfd);
+    close(sendfd);
     return 0;
 }

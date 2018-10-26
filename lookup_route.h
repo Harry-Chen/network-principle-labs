@@ -9,16 +9,19 @@ struct route {
     struct nexthop *nexthop;
 };
 
-struct nexthop {
-    struct nexthop *next;
+struct remote_host_t {
     char *if_name;
     uint32_t if_index;
     struct in_addr addr;
 };
 
+struct nexthop {
+    struct nexthop *next;
+    struct remote_host_t host;
+};
+
 struct nextaddr {
-    char *if_name;
-    struct in_addr addr;
+    struct remote_host_t host;
     uint32_t prefix_len;
 };
 

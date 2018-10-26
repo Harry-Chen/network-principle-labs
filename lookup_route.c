@@ -21,10 +21,10 @@ int insert_route(uint32_t ip_prefix, uint32_t prefix_len, char *if_name,
     (item->ip_prefix).s_addr = ip_prefix;
     item->prefix_len = prefix_len;
     item->nexthop = (struct nexthop*) malloc(sizeof(struct nexthop));
-    item->nexthop->if_name = (char *) malloc(strlen(if_name));
-    strcpy(item->nexthop->if_name, if_name);
-    item->nexthop->if_index = if_index;
-    (item->nexthop->addr).s_addr = nexthop_addr;
+    item->nexthop->host.if_name = (char *) malloc(strlen(if_name));
+    strcpy(item->nexthop->host.if_name, if_name);
+    item->nexthop->host.if_index = if_index;
+    item->nexthop->host.addr.s_addr = nexthop_addr;
 
     table[table_size] = item;
     rt_insert(routing_table, ntohl(ip_prefix), prefix_len, table_size);
@@ -44,8 +44,7 @@ int lookup_route(struct in_addr dst_addr, struct nextaddr *nexthop_info) {
 
     struct route *item = table[rt_index];
 
-    nexthop_info->if_name = item->nexthop->if_name;
-    nexthop_info->addr = item->nexthop->addr;
+    memcpy(&nexthop_info->host, &item->nexthop->host, sizeof(struct remote_host_t));
     nexthop_info->prefix_len = item->prefix_len;
 
     return 0;
