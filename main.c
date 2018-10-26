@@ -4,6 +4,10 @@
 #include "lookup_route.h"
 #include "query_mac.h"
 #include "send_ether_ip.h"
+
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 #include <pthread.h>
 
 #define IP_HEADER_LEN sizeof(struct ip)
@@ -32,6 +36,33 @@ void *receive_rt_change(void *arg) {
     }
 }
 
+void init_local_interfaces() {
+    struct ifaddrs *ifaddr, *ifa;
+    int family, s;
+    char host[NI_MAXHOST];
+ 
+    if (getifaddrs(&ifaddr) == -1) {
+        fprintf(stderr, "Failed to get info of local interface\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+ 
+        family = ifa->ifa_addr->sa_family;
+  
+        if (family == AF_INET) {
+            printf("Found interface %s\n", ifa->ifa_name);
+            s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
+                    host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+            printf(" with IPv4 address: %s\n", host);
+        }
+    }
+ 
+    freeifaddrs(ifaddr);
+}
+
 int main() {
 
     char skbuf[1500];
@@ -53,6 +84,7 @@ int main() {
     init_route();
 
     // TODO: insert link routes to routing table
+    init_local_interfaces();
 
     // use thread to receive routing table change from quagga
     pthread_t tid;
