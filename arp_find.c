@@ -33,11 +33,8 @@ int arp_get(macaddr_t mac, char *if_name, char *ip_str) {
 
     if (arp_req.arp_flags & ATF_COM) {
         memcpy(mac, (unsigned char *)arp_req.arp_ha.sa_data, sizeof(macaddr_t));
-        printf("MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
-                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         return 0;
     } else {
-        printf("MAC Address not in the ARP cache.\n");
         return 1;
     }
     
