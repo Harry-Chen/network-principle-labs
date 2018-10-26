@@ -119,7 +119,10 @@ int main() {
             macaddr_t mac_addr_to, mac_addr_from;
             result = arp_get_mac(mac_addr_to, nexthopinfo.if_name, ip_addr_from);
 
-            if (result == 1) {
+            if (result == 2) {
+                DEBUG("Lookup ARP table failed, maybe nexthop unreachable or is myself?\n");
+                continue;
+            } else if (result == 1) {
                 DEBUG("MAC Address for next hop not in the ARP cache.\n");
                 continue;
             }

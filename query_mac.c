@@ -27,8 +27,8 @@ int arp_get_mac(macaddr_t mac, char *if_name, char *ip_str) {
 
     int ret = ioctl(sfd, SIOCGARP, &arp_req);
     if (ret < 0) {
-        fprintf(stderr, "Get ARP entry failed : %s\n", strerror(errno));
-        exit(2);
+        fprintf(stderr, "Get ARP entry failed for %s @%s : %s\n", ip_str, if_name, strerror(errno));
+        return 2;
     }
 
     if (arp_req.arp_flags & ATF_COM) {
@@ -49,7 +49,7 @@ int if_get_mac(macaddr_t mac, char *ifname) {
     int ret = ioctl(sfd, SIOCGIFHWADDR, &ifr);
 
     if (ret < 0) {
-        fprintf(stderr, "Get MAC address failed : %s\n", strerror(errno));
+        fprintf(stderr, "Get MAC address failed for interface %s : %s\n", ifname, strerror(errno));
         exit(2);
     }
 
