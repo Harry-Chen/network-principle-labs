@@ -122,13 +122,10 @@ int main() {
                 continue;
             }
             
-#ifndef SPEEDUP
+            // calculate new checksum
             uint16_t new_checksum = calculate_check_sum(ip_recv_header);
             DEBUG("New checksum of packet is %x\n", new_checksum);
             ip_recv_header->ip_sum = new_checksum;
-#else
-            ip_recv_header->ip_sum += 1;
-#endif
 
 
             // get MAC address of next hop from ARP table
