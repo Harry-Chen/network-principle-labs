@@ -39,8 +39,8 @@ void *receive_rt_change(void *arg) {
 int main() {
 
     // 1500 BYTES IS NOT ENOUGH! DON'T TRUST TA!
-    char skbuf[1514];
-    int recvfd, sendfd;
+    char skbuf[65535];
+    int recvfd, sendfd, arp_fd;
     uint16_t recvlen, datalen;
 
     // use raw socket to capture and send ip packets
@@ -52,6 +52,8 @@ int main() {
         printf("Error opening raw socket for sending IP packet\n");
         return -1;
     }
+
+    arp_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
 
     // initialize routing table
@@ -123,10 +125,14 @@ int main() {
                 continue;
             }
             
+#ifndef SPEEDUP
             // calculate new checksum
             uint16_t new_checksum = calculate_check_sum(ip_recv_header);
             DEBUG("New checksum of packet is %x\n", new_checksum);
             ip_recv_header->ip_sum = new_checksum;
+#else
+            ++ip_recv_header->ip_sum;
+#endif
 
 
             // get MAC address of next hop from ARP table
@@ -146,7 +152,7 @@ int main() {
 
 
             //get MAC address of source interface
-            get_mac_interface(&mac_addr_from, nexthopinfo.host.if_index);
+            get_mac_interface(arp_fd, &mac_addr_from, nexthopinfo.host.if_index);
 
             DEBUG("Source MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
                 *mac_addr_from[0], *mac_addr_from[1], *mac_addr_from[2], *mac_addr_from[3], *mac_addr_from[4], *mac_addr_from[5]);
@@ -180,5 +186,6 @@ int main() {
     pthread_cancel(tid);
     close(recvfd);
     close(sendfd);
+    close(arp_fd);
     return 0;
 }
