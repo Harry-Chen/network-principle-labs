@@ -1,7 +1,7 @@
 #ifndef __LOCAL_ROUTE_H__
 #define __LOCAL_ROUTE_H__
 
-#include "query_mac.h"
+#include "arp_query.h"
 #include <net/if.h>
 #include <netinet/in.h>
 
@@ -15,5 +15,7 @@ struct if_info_t {
 };
 
 void init_local_interfaces();
+
+void get_mac_interface(macaddr_t **mac, uint32_t if_index);
 
 #endif

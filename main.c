@@ -1,15 +1,13 @@
 
 #include "recv_route.h"
 #include "check_sum.h"
-#include "lookup_route.h"
-#include "query_mac.h"
+#include "routing_table.h"
+#include "arp_query.h"
 #include "local_route.h"
-#include "send_ether_ip.h"
+
+#include "common.h"
 
 #include <pthread.h>
-
-#define IP_HEADER_LEN sizeof(struct ip)
-#define ETHER_HEADER_LEN sizeof(struct ether_header)
 
 #define DEBUG(...) printf(__VA_ARGS__)
 
@@ -67,7 +65,7 @@ int main() {
             
             // cast to header type
             struct ethhdr *eth_header = (struct ethhdr*) skbuf;
-            struct ip *ip_recv_header = (struct ip *)(skbuf + ETHER_HEADER_LEN);
+            struct ip *ip_recv_header = (struct ip *)(skbuf + sizeof(struct ether_header));
 
 
             // analyze IP packet
@@ -75,7 +73,7 @@ int main() {
             inet_ntop(AF_INET, &(ip_recv_header->ip_src.s_addr), ip_addr_from, INET_ADDRSTRLEN);
             inet_ntop(AF_INET, &(ip_recv_header->ip_dst.s_addr), ip_addr_to, INET_ADDRSTRLEN);
             uint16_t header_length = ip_recv_header->ip_hl * 4;
-            datalen = recvlen - ETHER_HEADER_LEN - header_length;
+            datalen = recvlen - sizeof(struct ether_header) - header_length;
             DEBUG("\nReceived IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
 
 
@@ -125,11 +123,11 @@ int main() {
 
 
             // get MAC address of next hop from ARP table
-            macaddr_t mac_addr_to, mac_addr_from;
+            macaddr_t mac_addr_to, *mac_addr_from;
             result = arp_get_mac(mac_addr_to, nexthopinfo.host.if_name, ip_addr_from);
 
             if (result == 2) {
-                DEBUG("Lookup ARP table failed, maybe nexthop unreachable or is myself?\n");
+                DEBUG("Lookup ARP table failed, maybe next hop is unreachable or myself?\n");
                 continue;
             } else if (result == 1) {
                 DEBUG("MAC Address for next hop not in the ARP cache.\n");
@@ -141,15 +139,15 @@ int main() {
 
 
             //get MAC address of source interface
-            result = if_get_mac(mac_addr_from, nexthopinfo.host.if_name);
+            get_mac_interface(&mac_addr_from, nexthopinfo.host.if_index);
 
             DEBUG("Source MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
-                mac_addr_from[0], mac_addr_from[1], mac_addr_from[2], mac_addr_from[3], mac_addr_from[4], mac_addr_from[5]);
+                *mac_addr_from[0], *mac_addr_from[1], *mac_addr_from[2], *mac_addr_from[3], *mac_addr_from[4], *mac_addr_from[5]);
             
 
             // fill in ethernet header
             memcpy(eth_header->h_dest, mac_addr_to, ETH_ALEN);
-            memcpy(eth_header->h_source, mac_addr_from, ETH_ALEN);
+            memcpy(eth_header->h_source, *mac_addr_from, ETH_ALEN);
 
 
             // we do not touch the payload of ip packet

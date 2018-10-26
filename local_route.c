@@ -1,5 +1,5 @@
 #include "local_route.h"
-#include "lookup_route.h"
+#include "routing_table.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +34,7 @@ void init_local_interfaces() {
             uint32_t if_index = if_nametoindex(ifa->ifa_name);
 
             char ip_addr[INET_ADDRSTRLEN];
-            printf("Found interface %s", ifa->ifa_name);
+            printf("Found interface %d: %s", if_index, ifa->ifa_name);
             struct in_addr *addr = &((struct sockaddr_in *) ifa->ifa_addr)->sin_addr;
             struct in_addr *mask = &((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr;
             uint32_t prefix = ntohl(mask->s_addr);
@@ -50,11 +50,15 @@ void init_local_interfaces() {
         else if (family == AF_PACKET && !(ifa->ifa_flags & IFF_LOOPBACK)) {
             uint32_t if_index = if_nametoindex(ifa->ifa_name);
             struct sockaddr_ll *s = (struct sockaddr_ll*)(ifa->ifa_addr);
-            printf("Found interface %s", ifa->ifa_name);
+            printf("Found interface %d: %s", if_index, ifa->ifa_name);
             printf(" with MAC address: %02x:%02x:%02x:%02x:%02x:%02x\n", s->sll_addr[0], s->sll_addr[1], s->sll_addr[2], s->sll_addr[3], s->sll_addr[4], s->sll_addr[5]);
             memcpy(if_info[if_index].mac, s->sll_addr, ETH_ALEN);
         }
     }
  
     freeifaddrs(ifaddr);
+}
+
+void get_mac_interface(macaddr_t **mac, uint32_t if_index) {
+    *mac = &(if_info[if_index].mac);
 }
