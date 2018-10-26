@@ -157,7 +157,7 @@ int main() {
             sadr_ll.sll_halen = ETH_ALEN;
             memcpy(sadr_ll.sll_addr, mac_addr_to, ETH_ALEN);
 
-            result = sendto(sendfd, skbuf, 64, recvlen, (const struct sockaddr *) &sadr_ll, sizeof(struct sockaddr_ll));
+            result = sendto(sendfd, skbuf, recvlen, 0, (const struct sockaddr *) &sadr_ll, sizeof(struct sockaddr_ll));
 
             if (result < 0) {
                 DEBUG("Send raw ip packet failed\n");
