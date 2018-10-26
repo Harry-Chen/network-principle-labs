@@ -1,8 +1,8 @@
 
-#include "arp_find.h"
+#include "recv_route.h"
 #include "check_sum.h"
 #include "lookup_route.h"
-#include "recv_route.h"
+#include "query_mac.h"
 #include "send_ether_ip.h"
 #include <pthread.h>
 
@@ -36,10 +36,6 @@ int main() {
 
     char skbuf[1500];
     int recvfd, recvlen, datalen;
-    struct ip *ip_recv_header;
-    pthread_t tid;
-    ip_recv_header = (struct ip *)malloc(sizeof(struct ip));
-    char ip_addr_from[INET_ADDRSTRLEN], ip_addr_to[INET_ADDRSTRLEN];
 
     // use raw socket to capture ip packets
     if ((recvfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP))) == -1) {
@@ -53,19 +49,26 @@ int main() {
     // TODO: insert link routes to routing table
 
     // use thread to receive routing table change from quagga
+    pthread_t tid;
     int pd = pthread_create(&tid, NULL, receive_rt_change, NULL);
     
     while (1) {
         recvlen = recv(recvfd, skbuf, sizeof(skbuf), 0);
         if (recvlen > 0) {
+            
+            // cast to header type
+            struct ethhdr *eth_header = (struct ethhdr*) skbuf;
+            struct ip *ip_recv_header = (struct ip *)(skbuf + ETHER_HEADER_LEN);
+
 
             // analyze IP packet
-            ip_recv_header = (struct ip *)(skbuf + ETHER_HEADER_LEN);
+            char ip_addr_from[INET_ADDRSTRLEN], ip_addr_to[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &(ip_recv_header->ip_src.s_addr), ip_addr_from, INET_ADDRSTRLEN);
             inet_ntop(AF_INET, &(ip_recv_header->ip_dst.s_addr), ip_addr_to, INET_ADDRSTRLEN);
             uint16_t header_length = ip_recv_header->ip_hl * 4;
             datalen = recvlen - ETHER_HEADER_LEN - header_length;
-            DEBUG("Received IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
+            DEBUG("\nReceived IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
+
 
             // verify checksum
             uint16_t result = calculate_check_sum(ip_recv_header);
@@ -87,30 +90,64 @@ int main() {
                 continue;
             }
 
+            if (nexthopinfo.addr.s_addr == 0u) {
+                // nexthop "0.0.0.0" means onlink
+                nexthopinfo.addr.s_addr = ip_recv_header->ip_dst.s_addr;
+            }
+
+            if (nexthopinfo.addr.s_addr == UINT32_MAX) {
+                // nexthop "255.255.255.255" means ignoring
+                DEBUG("Packet to local address, ignored.\n");
+                continue;
+            }
+
             inet_ntop(AF_INET, &(nexthopinfo.addr), ip_addr_from, INET_ADDRSTRLEN);
             DEBUG("Next hop is %s via %s, with prefix length %d\n", ip_addr_from, nexthopinfo.if_name, nexthopinfo.prefix_len);
 
 
-            // get MAC address from ARP table
-            macaddr_t mac_addr;
-            result = arp_get(mac_addr, nexthopinfo.if_name, ip_addr_from);
+            // construct ip header
+            if (--ip_recv_header->ip_ttl == 0) {
+                DEBUG("TTL decreased to 0, goodbye.\n");
+                continue;
+            }
+            uint16_t new_checksum = calculate_check_sum(ip_recv_header);
+            DEBUG("New checksum of packet is %x\n", new_checksum);
+            ip_recv_header->ip_sum = new_checksum;
+
+
+            // get MAC address of next hop from ARP table
+            macaddr_t mac_addr_to, mac_addr_from;
+            result = arp_get_mac(mac_addr_to, nexthopinfo.if_name, ip_addr_from);
 
             if (result == 1) {
-                DEBUG("MAC Address not in the ARP cache.\n");
+                DEBUG("MAC Address for next hop not in the ARP cache.\n");
                 continue;
             }
 
-            DEBUG("MAC Address for next hop: %02x:%02x:%02x:%02x:%02x:%02x\n",
-                mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+            DEBUG("Destination MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+                mac_addr_to[0], mac_addr_to[1], mac_addr_to[2], mac_addr_to[3], mac_addr_to[4], mac_addr_to[5]);
 
 
-            // TODO: construct ip header
-            // TODO: construct ethernet header
-            // TODO: fill in data
+            //get MAC address of source interface
+            result = if_get_mac(mac_addr_from, nexthopinfo.if_name);
+
+            DEBUG("Source MAC Address: %02x:%02x:%02x:%02x:%02x:%02x\n",
+                mac_addr_from[0], mac_addr_from[1], mac_addr_from[2], mac_addr_from[3], mac_addr_from[4], mac_addr_from[5]);
+            
+
+            // fill in ethernet header
+            memcpy(eth_header->h_dest, mac_addr_to, ETH_ALEN);
+            memcpy(eth_header->h_source, mac_addr_from, ETH_ALEN);
+
+
+            // we do not touch the payload of ip packet
+
+
             // TODO: send by raw socket
         }
     }
 
+    pthread_cancel(tid);
     close(recvfd);
     return 0;
 }

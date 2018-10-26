@@ -1,7 +1,7 @@
 #ifndef __SEND__
 #define __SEND__
 
-#include "arp_find.h"
+#include "query_mac.h"
 
 #include <arpa/inet.h>
 #include <net/ethernet.h>

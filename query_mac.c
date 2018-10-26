@@ -1,4 +1,4 @@
-#include "arp_find.h"
+#include "query_mac.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +11,7 @@
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 
-int arp_get(macaddr_t mac, char *if_name, char *ip_str) { 
+int arp_get_mac(macaddr_t mac, char *if_name, char *ip_str) { 
 
     struct arpreq arp_req;
     struct sockaddr_in *sin;
@@ -21,7 +21,7 @@ int arp_get(macaddr_t mac, char *if_name, char *ip_str) {
     memset(&arp_req, 0, sizeof(arp_req));
     sin->sin_family = AF_INET;
     inet_pton(AF_INET, ip_str, &(sin->sin_addr));
-    strncpy(arp_req.arp_dev, if_name, IFNAMSIZ-1);
+    strncpy(arp_req.arp_dev, if_name, IF_NAMESIZE - 1);
 
     int sfd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -38,4 +38,21 @@ int arp_get(macaddr_t mac, char *if_name, char *ip_str) {
         return 1;
     }
     
+}
+
+int if_get_mac(macaddr_t mac, char *ifname) {
+
+    struct ifreq ifr;
+ 
+    int sfd = socket(AF_INET, SOCK_STREAM, 0);
+    strncpy(ifr.ifr_name, ifname, IF_NAMESIZE - 1);
+    int ret = ioctl(sfd, SIOCGIFHWADDR, &ifr);
+
+    if (ret < 0) {
+        fprintf(stderr, "Get MAC address failed : %s\n", strerror(errno));
+        exit(2);
+    }
+
+    memcpy(mac, ifr.ifr_hwaddr.sa_data, ETH_ALEN);
+    return 0;
 }
