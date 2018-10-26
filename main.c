@@ -80,10 +80,11 @@ int main() {
             datalen = recvlen - sizeof(struct ether_header) - header_length;
             DEBUG("\nReceived IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
 
+            uint16_t result;
 
 #ifndef SPEEDUP
             // verify checksum
-            uint16_t result = calculate_check_sum(ip_recv_header);
+            result = calculate_check_sum(ip_recv_header);
             DEBUG("Checksum is %x", result);
 
             if (result != ip_recv_header->ip_sum) {

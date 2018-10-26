@@ -26,3 +26,4 @@ $(LIB_NAME)/target/release/lib$(LIB_NAME).a:
 
 clean :
 	rm -rf $(EXE) $(OBJS)
+	$(MAKE) -C $(LIB_NAME) clean
