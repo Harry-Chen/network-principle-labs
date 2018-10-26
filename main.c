@@ -53,10 +53,14 @@ void init_local_interfaces() {
         family = ifa->ifa_addr->sa_family;
   
         if (family == AF_INET) {
-            printf("Found interface %s\n", ifa->ifa_name);
-            s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
-                    host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-            printf(" with IPv4 address: %s\n", host);
+            char ip_addr[INET_ADDRSTRLEN];
+            printf("Found interface %s", ifa->ifa_name);
+            struct in_addr *addr = &((struct sockaddr_in *) ifa->ifa_addr)->sin_addr;
+            struct in_addr *mask = &((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr;
+            uint32_t prefix = ntohl(mask->s_addr);
+            inet_ntop(AF_INET, &(addr->s_addr), ip_addr, INET_ADDRSTRLEN);
+            uint32_t prefix_len = sizeof(uint32_t) - __builtin_ctz(prefix);
+            printf(" with IPv4 address: %s/%d\n", host, ip_addr);
         }
     }
  
