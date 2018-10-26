@@ -5,6 +5,6 @@
 
 typedef unsigned char macaddr_t[ETH_ALEN];
 
-int arp_get_mac(int sock_fd, macaddr_t mac, char *ifname, char *ip_str);
+int arp_get_mac(macaddr_t mac, char *ifname, char *ip_str);
 
 #endif

@@ -9,19 +9,12 @@ static routing_table_t routing_table;
 static struct route *table[MAX_TABLE_SIZE];
 static int table_size = 1;
 
-static struct in_addr last_query;
-static int dirty;
-static int last_result;
-
 void init_route() {
-    dirty = 1;
     routing_table = rt_init();
 }
 
 int insert_route(uint32_t ip_prefix, uint32_t prefix_len, char *if_name,
                  uint32_t if_index, uint32_t nexthop_addr) {
-
-    dirty = 1;
 
     struct route* item = (struct route*) malloc(sizeof(struct route));
     (item->ip_prefix).s_addr = ip_prefix;
@@ -41,16 +34,11 @@ int insert_route(uint32_t ip_prefix, uint32_t prefix_len, char *if_name,
 
 int lookup_route(struct in_addr dst_addr, struct nextaddr *nexthop_info) {
 
-    if (!dirty && dst_addr.s_addr == last_query.s_addr) {
-        // direct hit
-        return last_result;
-    }
-
     uint32_t rt_index = rt_lookup(routing_table, ntohl(dst_addr.s_addr));
 
     // no match
     if (rt_index == 0) {
-        return last_result = 1;
+        return 1;
     }
 
     struct route *item = table[rt_index];
@@ -58,14 +46,10 @@ int lookup_route(struct in_addr dst_addr, struct nextaddr *nexthop_info) {
     memcpy(&nexthop_info->host, &item->nexthop->host, sizeof(struct remote_host_t));
     nexthop_info->prefix_len = item->prefix_len;
 
-    dirty = 0;
-    last_query.s_addr = dst_addr.s_addr;
-
-    return last_result = 0;
+    return 0;
 }
 
 int delete_route(struct in_addr dst_addr, uint32_t prefix_len) {
-    dirty = 1;
     rt_remove(routing_table, ntohl(dst_addr.s_addr), prefix_len);
     return 0;
 }
