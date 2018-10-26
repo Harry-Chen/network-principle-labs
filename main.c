@@ -3,11 +3,9 @@
 #include "check_sum.h"
 #include "lookup_route.h"
 #include "query_mac.h"
+#include "local_route.h"
 #include "send_ether_ip.h"
 
-#include <sys/socket.h>
-#include <netdb.h>
-#include <ifaddrs.h>
 #include <pthread.h>
 
 #define IP_HEADER_LEN sizeof(struct ip)
@@ -34,38 +32,6 @@ void *receive_rt_change(void *arg) {
             }
         }
     }
-}
-
-void init_local_interfaces() {
-    struct ifaddrs *ifaddr, *ifa;
-    int family, s;
-    char host[NI_MAXHOST];
- 
-    if (getifaddrs(&ifaddr) == -1) {
-        fprintf(stderr, "Failed to get info of local interface\n");
-        exit(EXIT_FAILURE);
-    }
-
-    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr == NULL)
-            continue;
- 
-        family = ifa->ifa_addr->sa_family;
-  
-        if (family == AF_INET) {
-            char ip_addr[INET_ADDRSTRLEN];
-            printf("Found interface %s", ifa->ifa_name);
-            struct in_addr *addr = &((struct sockaddr_in *) ifa->ifa_addr)->sin_addr;
-            struct in_addr *mask = &((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr;
-            uint32_t prefix = ntohl(mask->s_addr);
-            inet_ntop(AF_INET, &(addr->s_addr), ip_addr, INET_ADDRSTRLEN);
-            uint32_t prefix_len = 32 - __builtin_ctz(prefix);
-            printf(" with IPv4 address: %s/%d\n", ip_addr, prefix_len);
-            insert_route(addr->s_addr, prefix_len, ifa->ifa_name, if_nametoindex(ifa->ifa_name), UINT32_MAX);
-        }
-    }
- 
-    freeifaddrs(ifaddr);
 }
 
 int main() {
