@@ -1,11 +1,15 @@
 SRCS    := $(wildcard *.c)
-OBJS    := $(SRCS:.c=.o)
 HEADERS := $(SRCS:.c=.h)
+OBJ     := obj
+OBJS    := $(addprefix $(OBJ)/,$(SRCS:.c=.o))
 
-EXE    := main
+EXE    := forwarder
 
 CC      := ${CROSS_COMPILE}gcc
-CFLAGS  := -O2 -g -Wall
+CFLAGS  := -Wall -O3
+
+CFLAGS_RELEASE := -Wl,--strip-all -static-libstdc++ -static-libgcc -static
+CFLAGS_DEBUG   := -g
 
 ifdef SPEEDUP
 CFLAGS  += -DSPEEDUP
@@ -13,17 +17,35 @@ endif
 
 LIB_NAME := routing_table
 
-all: $(EXE)
+all: $(OBJ) $(OBJ)/$(EXE).release $(OBJ)/$(EXE).debug
 
-$(EXE): $(OBJS) $(LIB_NAME)/target/release/lib$(LIB_NAME).a
-	$(CC) $(CFLAGS) -o $@ $^ -pthread -ldl
+$(OBJ):
+	mkdir -p $@
+
+$(OBJ)/$(EXE).release: $(OBJS) $(OBJ)/lib$(LIB_NAME)_release.a
+	$(CC) $(CFLAGS) $(CFLAGS_RELEASE) -o $@ $^ -pthread -ldl
+
+$(OBJ)/$(EXE).debug: $(OBJS) $(OBJ)/lib$(LIB_NAME)_debug.a
+	$(CC) $(CFLAGS) $(CFLAGS_DEBUG) -o $@ $^ -pthread -ldl
+
+$(OBJ)/lib$(LIB_NAME)_release.a: $(LIB_NAME)/target/release/lib$(LIB_NAME).a
+	cp $^ $@
+
+$(OBJ)/lib$(LIB_NAME)_debug.a: $(LIB_NAME)/target/debug/lib$(LIB_NAME).a
+	cp $^ $@
+
+$(LIB_NAME)/target/debug/lib$(LIB_NAME).a:
+	$(MAKE) -C $(LIB_NAME) debug
 
 $(LIB_NAME)/target/release/lib$(LIB_NAME).a:
-	$(MAKE) -C $(LIB_NAME)
+	$(MAKE) -C $(LIB_NAME) release
 
-%.o: %.c %.h common.h
+$(OBJ)/%.o: %.c %.h common.h
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(OBJ)/main.o: main.c common.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean :
-	rm -rf $(EXE) $(OBJS)
+	rm -rf $(OBJ)
 	$(MAKE) -C $(LIB_NAME) clean

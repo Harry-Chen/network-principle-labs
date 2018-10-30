@@ -7,18 +7,22 @@ ifdef SPEEDUP
 CARGO_FLAGS := --features "speedup"
 endif
 
-all: target/release/lib${LIBNAME}.so
+all: release debug
 
-test: test.o target/debug/lib${LIBNAME}.so 
+release: target/release/lib${LIBNAME}.a
+
+debug: target/debug/lib${LIBNAME}.a
+
+test: test.o target/debug/lib${LIBNAME}.a
 	gcc -O2 $^ -o $@ -pthread -ldl
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-target/release/lib${LIBNAME}.so: src/lib.rs
+target/release/lib${LIBNAME}.a: src/lib.rs
 	cargo build --release ${CARGO_FLAGS}
 
-target/debug/lib${LIBNAME}.so: src/lib.rs
+target/debug/lib${LIBNAME}.a: src/lib.rs
 	cargo build ${CARGO_FLAGS}
 
 clean:
