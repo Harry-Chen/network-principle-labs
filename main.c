@@ -7,6 +7,7 @@
 
 #include "common.h"
 
+#include <time.h>
 #include <signal.h>
 #include <errno.h>
 #include <pthread.h>
@@ -34,6 +35,10 @@ int main() {
     char skbuf[BUF_SIZE];
     int recvfd, sendfd, arp_fd;
     uint16_t recvlen, datalen;
+    unsigned long long forward_length_total = 0;
+    unsigned long long recv_count = 0, forward_count = 0;
+    time_t last_print = time(NULL);
+    time_t now;
 
     // use raw socket to capture and send ip packets
     if ((recvfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP))) == -1) {
@@ -76,9 +81,17 @@ int main() {
     }
     
     while (!should_exit) {
+
+        // print statistics
+        if ((now = time(NULL)) - last_print == 1) {
+            printf("\rReceived %llu packets, forwarded %llu packets. Speed: %llu Mbps/S\n", recv_count, forward_count, forward_length_total / 1024 / 1024 * 8);
+            last_print = now;
+            forward_length_total = 0;
+        }
+
         recvlen = recv(recvfd, skbuf, sizeof(skbuf), 0);
         if (recvlen > 0) {
-            
+            recv_count += 1;
             // cast to header type
             struct ethhdr *eth_header = (struct ethhdr*) skbuf;
             struct ip *ip_recv_header = (struct ip *)(skbuf + sizeof(struct ether_header));
@@ -189,6 +202,8 @@ int main() {
                 exit(EXIT_FAILURE);
             } else {
                 DEBUG("Send succeeded!\n");
+                forward_length_total += recvlen;
+                forward_count += 1;
             }
 
         }
