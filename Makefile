@@ -11,11 +11,8 @@ CFLAGS  := -Wall -O3
 CFLAGS_RELEASE := -Wl,--strip-all -static-libstdc++ -static-libgcc -static
 CFLAGS_DEBUG   := -g
 
-ifdef SPEEDUP
-CFLAGS  += -DSPEEDUP
-endif
-
 LIB_NAME := routing_table
+
 
 all: $(OBJ) $(OBJ)/$(EXE).release $(OBJ)/$(EXE).debug
 

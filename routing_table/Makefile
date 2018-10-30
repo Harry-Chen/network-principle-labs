@@ -3,10 +3,6 @@ CC      := ${CROSS_COMPILE}gcc
 CFLAGS  := -O2 -g -Wall
 LIBNAME := routing_table
 
-ifdef SPEEDUP
-CARGO_FLAGS := --features "speedup"
-endif
-
 all: release debug
 
 release: target/release/lib${LIBNAME}.a
@@ -20,10 +16,10 @@ test: test.o target/debug/lib${LIBNAME}.a
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 target/release/lib${LIBNAME}.a: src/lib.rs
-	cargo build --release ${CARGO_FLAGS}
+	cargo build --release --features "release"
 
 target/debug/lib${LIBNAME}.a: src/lib.rs
-	cargo build ${CARGO_FLAGS}
+	cargo build
 
 clean:
 	rm -rf test test.o
