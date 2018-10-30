@@ -11,7 +11,7 @@
 #include <errno.h>
 #include <pthread.h>
 
-#ifndef SPEEDUP
+#ifdef VERBOSE
 #define DEBUG(...) printf(__VA_ARGS__)
 #else
 #define DEBUG(...) do{} while(0)

@@ -9,7 +9,11 @@ CC      := ${CROSS_COMPILE}gcc
 CFLAGS  := -Wall -O3
 
 CFLAGS_RELEASE := -Wl,--strip-all -static-libstdc++ -static-libgcc -static
-CFLAGS_DEBUG   := -g -DSPEEDUP
+CFLAGS_DEBUG   := -g
+
+ifdef VERBOSE
+	CFLAGS += -DVERBOSE
+endif
 
 LIB_NAME := routing_table
 LIB_FILENAME := lib$(LIB_NAME)
@@ -22,10 +26,10 @@ $(OBJ):
 	mkdir -p $@
 
 $(OBJ)/$(EXE).release: $(OBJS) $(OBJ)/$(LIB_FILENAME).a
-	$(CC) $(CFLAGS) $(CFLAGS_RELEASE) -o $@ $^ -pthread -ldl
+	$(CC) $(CFLAGS) -o $@ $^ -pthread -ldl
 
 $(OBJ)/$(EXE).debug: $(OBJS) $(OBJ)/$(LIB_FILENAME).a
-	$(CC) $(CFLAGS) $(CFLAGS_DEBUG) -o $@ $^ -pthread -ldl
+	$(CC) $(CFLAGS) -o $@ $^ -pthread -ldl
 
 $(OBJ)/$(LIB_FILENAME).a: $(LIB_PATH)/$(LIB_FILENAME).a
 	cp $^ $@
