@@ -8,14 +8,14 @@ use treebitmap::*;
 
 type RoutingTable = IpLookupTable<Ipv4Addr, u32>;
 
-#[cfg(not(feature = "release"))]
+#[cfg(feature = "verbose")]
 macro_rules! log {
     ($($x:expr),*) => {
         println!($($x),*);
     };
 }
 
-#[cfg(feature = "release")]
+#[cfg(not(feature = "verbose"))]
 macro_rules! log {
     ($($x:expr),*) => { };
 }

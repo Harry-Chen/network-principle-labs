@@ -16,10 +16,10 @@ test: test.o target/debug/lib${LIBNAME}.a
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 target/release/lib${LIBNAME}.a: src/lib.rs
-	cargo build --release --features "release"
+	cargo build --release
 
 target/debug/lib${LIBNAME}.a: src/lib.rs
-	cargo build
+	cargo build --features "verbose"
 
 clean:
 	rm -rf test test.o
