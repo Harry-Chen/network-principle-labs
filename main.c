@@ -85,6 +85,7 @@ int main() {
         // print statistics
         if ((now = time(NULL)) - last_print == 1) {
             printf("\rReceived %llu packets, forwarded %llu packets. Speed: %llu Mbps/s", recv_count, forward_count, forward_length_total / 1024 / 1024 * 8);
+            fflush(stdout);
             last_print = now;
             forward_length_total = 0;
         }
