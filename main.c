@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'h':
                 printf("USAGE: %s [-v] [-s]\n-v:\tVerbose Mode\n-s:\tSpeed-up Mode\n-h:\tShow this usage\n", cmd_name);
+                exit(EXIT_SUCCESS);
                 break;
         }
         opt = getopt(argc, argv, CMD_OPTIONS);
