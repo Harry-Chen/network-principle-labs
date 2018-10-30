@@ -49,16 +49,18 @@ int insert_route(struct in_addr ip_prefix, uint32_t prefix_len, char *if_name,
 
 int lookup_route(struct in_addr dst_addr, struct nextaddr *nexthop_info) {
 
-    if (!dirty && dst_addr.s_addr == last_query.s_addr) {
+    if (dirty == 0 && dst_addr.s_addr == last_query.s_addr) {
         // direct hit
         return last_result;
     }
 
     uint32_t rt_index = rt_lookup(routing_table, ntohl(dst_addr.s_addr));
+    last_query.s_addr = dst_addr.s_addr;
 
     // no match
     if (rt_index == 0) {
-        return last_result = 1;
+        dirty = 0;
+        return (last_result = 1);
     }
 
     struct route *item = table[rt_index];
@@ -67,9 +69,7 @@ int lookup_route(struct in_addr dst_addr, struct nextaddr *nexthop_info) {
     nexthop_info->prefix_len = item->prefix_len;
 
     dirty = 0;
-    last_query.s_addr = dst_addr.s_addr;
-
-    return last_result = 0;
+    return (last_result = 0);
 }
 
 int delete_route(struct in_addr dst_addr, uint32_t prefix_len) {
