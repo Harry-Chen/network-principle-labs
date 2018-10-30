@@ -18,7 +18,8 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 
-#define NEXTHOP_ONLINK UINT32_MAX
-#define NEXTHOP_SELF 0
+extern struct in_addr NEXTHOP_ONLINK;
+
+extern struct in_addr NEXTHOP_SELF;
 
 #endif

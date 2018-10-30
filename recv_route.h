@@ -12,8 +12,8 @@ struct selfroute {
     uint32_t ifindex;
     struct in_addr nexthop;
     uint32_t cmdnum;
-    char ifname[IFNAMSIZ];
-} buf2;
+    char ifname[10];
+};
 
 int static_route_get(struct selfroute *selfrt);
 #endif

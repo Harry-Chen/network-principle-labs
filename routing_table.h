@@ -26,8 +26,8 @@ struct nextaddr {
 };
 
 void init_route();
-int insert_route(uint32_t ip_prefix, uint32_t prefix_len, char *if_name,
-                 uint32_t if_index, uint32_t nexthop_addr);
+int insert_route(struct in_addr ip_prefix, uint32_t prefix_len, char *if_name,
+                 uint32_t if_index, struct in_addr nexthop_addr);
 int lookup_route(struct in_addr dst_addr, struct nextaddr *nexthop_info);
 int delete_route(struct in_addr dst_addr, uint32_t prefix_len);
 

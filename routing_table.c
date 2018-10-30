@@ -13,27 +13,35 @@ static struct in_addr last_query;
 static int dirty;
 static int last_result;
 
+struct in_addr NEXTHOP_ONLINK =  {
+    .s_addr = UINT32_MAX
+};
+
+struct in_addr NEXTHOP_SELF =  {
+    .s_addr = 0
+};
+
 void init_route() {
     dirty = 1;
     routing_table = rt_init();
 }
 
-int insert_route(uint32_t ip_prefix, uint32_t prefix_len, char *if_name,
-                 uint32_t if_index, uint32_t nexthop_addr) {
+int insert_route(struct in_addr ip_prefix, uint32_t prefix_len, char *if_name,
+                 uint32_t if_index, struct in_addr nexthop_addr) {
 
     dirty = 1;
 
     struct route* item = (struct route*) malloc(sizeof(struct route));
-    (item->ip_prefix).s_addr = ip_prefix;
+    item->ip_prefix = ip_prefix;
     item->prefix_len = prefix_len;
     item->nexthop = (struct nexthop*) malloc(sizeof(struct nexthop));
     item->nexthop->host.if_name = (char *) malloc(strlen(if_name));
     strcpy(item->nexthop->host.if_name, if_name);
     item->nexthop->host.if_index = if_index;
-    item->nexthop->host.addr.s_addr = nexthop_addr;
+    item->nexthop->host.addr = nexthop_addr;
 
     table[table_size] = item;
-    rt_insert(routing_table, ntohl(ip_prefix), prefix_len, table_size);
+    rt_insert(routing_table, ntohl(ip_prefix.s_addr), prefix_len, table_size);
     table_size++;
 
     return 0;

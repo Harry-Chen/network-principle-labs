@@ -7,6 +7,7 @@
 
 #include "common.h"
 
+#include <errno.h>
 #include <pthread.h>
 
 #ifndef SPEEDUP
@@ -15,22 +16,32 @@
 #define DEBUG(...) do{} while(0)
 #endif
 
+#define BUF_SIZE 65535
+
 // thread to receive routing table change
 void *receive_rt_change(void *arg) {
-    printf("Thread started to receive routing table change.\n");
+
     int st = 0;
     struct selfroute selfrt;
     char ifname[IF_NAMESIZE];
+    char ip_addr_next[INET_ADDRSTRLEN], ip_addr_prefix[INET_ADDRSTRLEN];
 
     // add-24 del-25
     while (1) {
         st = static_route_get(&selfrt);
         if (st == 1) {
             if_indextoname(selfrt.ifindex, ifname);
+            inet_ntop(AF_INET, &(selfrt.nexthop.s_addr), ip_addr_next, INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(selfrt.prefix.s_addr), ip_addr_prefix, INET_ADDRSTRLEN);
+            printf("cmd: %d, prefix: %s/%d, next hop: %s, interface: %d(%s)\n", selfrt.cmdnum, ip_addr_prefix, selfrt.prefixlen, ip_addr_next, selfrt.ifindex, ifname);
             if (selfrt.cmdnum == 24) {
-                // TODO: insert to routing table
+                // insert to routing table
+                insert_route(selfrt.prefix, selfrt.prefixlen, ifname, selfrt.ifindex, selfrt.nexthop);
+                printf("Route inserted to table.\n");
             } else if (selfrt.cmdnum == 25) {
-                // TODO: delete from routing table
+                // delete from routing table
+                delete_route(selfrt.prefix, selfrt.prefixlen);
+                printf("Route deleted from table.\n");
             }
         }
     }
@@ -39,32 +50,42 @@ void *receive_rt_change(void *arg) {
 int main() {
 
     // 1500 BYTES IS NOT ENOUGH! DON'T TRUST TA!
-    char skbuf[65535];
+    char skbuf[BUF_SIZE];
     int recvfd, sendfd, arp_fd;
     uint16_t recvlen, datalen;
 
     // use raw socket to capture and send ip packets
     if ((recvfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP))) == -1) {
-        printf("Error opening raw socket for capturing IP packet\n");
-        return -1;
-    }
-    if ((sendfd = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW)) == -1) {
-        printf("Error opening raw socket for sending IP packet\n");
-        return -1;
+        fprintf(stderr, "Error opening raw socket for capturing IP packet: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
     }
 
-    arp_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if ((sendfd = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW)) == -1) {
+        fprintf(stderr, "Error opening raw socket for sending IP packet: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    if ((arp_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+        fprintf(stderr, "Error opening socket for querying ARP table: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 
 
     // initialize routing table
     init_route();
 
-    // TODO: insert link routes to routing table
+    // insert link routes to routing table
     init_local_interfaces();
 
     // use thread to receive routing table change from quagga
     pthread_t tid;
-    int pd = pthread_create(&tid, NULL, receive_rt_change, NULL);
+    int pd;
+    if ((pd = pthread_create(&tid, NULL, receive_rt_change, NULL)) < 0) {
+        fprintf(stderr, "Error creating thread.\n");
+        exit(EXIT_FAILURE);
+    } else {
+        printf("Thread started to receive routing table change.\n");
+    }
     
     while (1) {
         recvlen = recv(recvfd, skbuf, sizeof(skbuf), 0);
@@ -107,11 +128,11 @@ int main() {
                 continue;
             }
 
-            if (nexthopinfo.host.addr.s_addr == NEXTHOP_ONLINK) {
+            if (nexthopinfo.host.addr.s_addr == NEXTHOP_ONLINK.s_addr) {
                 nexthopinfo.host.addr.s_addr = ip_recv_header->ip_dst.s_addr;
             }
 
-            if (nexthopinfo.host.addr.s_addr == NEXTHOP_SELF) {
+            if (nexthopinfo.host.addr.s_addr == NEXTHOP_SELF.s_addr) {
                 DEBUG("Packet to local address, ignored.\n");
                 continue;
             }
@@ -172,10 +193,9 @@ int main() {
             sadr_ll.sll_halen = ETH_ALEN;
             memcpy(sadr_ll.sll_addr, mac_addr_to, ETH_ALEN);
 
-            result = sendto(sendfd, skbuf, recvlen, 0, (const struct sockaddr *) &sadr_ll, sizeof(struct sockaddr_ll));
-
-            if (result < 0) {
-                DEBUG("Send raw ip packet failed\n");
+            if ((result = sendto(sendfd, skbuf, recvlen, 0, (const struct sockaddr *) &sadr_ll, sizeof(struct sockaddr_ll))) == -1) {
+                fprintf(stderr, "Error sending raw IP packet: %s\n", strerror(errno));
+                exit(EXIT_FAILURE);
             } else {
                 DEBUG("Send succeeded!\n");
             }
