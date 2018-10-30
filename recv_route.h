@@ -15,7 +15,6 @@ struct selfroute {
     char ifname[10];
 };
 
-int static_route_get(struct selfroute *selfrt);
 void *receive_rt_change(void *arg);
 
 #endif

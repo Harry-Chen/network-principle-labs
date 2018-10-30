@@ -19,7 +19,7 @@
 
 #define BUF_SIZE 65535
 
-static int should_exit = 0;
+int should_exit = 0;
 
 void signal_handler(int signo) {
     if (signo == SIGINT) {

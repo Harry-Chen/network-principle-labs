@@ -3,11 +3,40 @@
 
 #include "common.h"
 
-int static_route_get(struct selfroute *selfrt) {
-    int sock_fd, conn_fd;
-	struct sockaddr_in server_addr;
-	int ret;
+extern int should_exit;
 
+static int static_route_get(int sock_fd, struct selfroute *selfrt) {
+
+	int ret;
+    int conn_fd;
+
+    if ((conn_fd = accept(sock_fd, (struct sockaddr *)NULL, NULL)) == -1) {
+        fprintf(stderr, "Accept socket error: %s\n\a", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    ret = recv(conn_fd, selfrt, sizeof(struct selfroute), 0);
+
+    if (ret < sizeof(struct selfroute)) {
+        printf("Received message is not of type struct selfroute, ignored.\n");
+        ret = -1;
+    } else {
+        printf("Received message from Quagga:");
+        send(conn_fd, "Route change received.\n", 6, 0);
+        ret = 0;
+    }
+
+    close(conn_fd);
+    return ret;
+
+}
+
+// thread to receive routing table change
+void *receive_rt_change(void *arg) {
+
+    int sock_fd;
+	struct sockaddr_in server_addr;
+    
 	if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		fprintf(stderr, "Error opening TCP socket: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
@@ -28,39 +57,13 @@ int static_route_get(struct selfroute *selfrt) {
 		exit(EXIT_FAILURE);
 	}
 
-    if ((conn_fd = accept(sock_fd, (struct sockaddr *)NULL, NULL)) == -1) {
-        fprintf(stderr, "Accept socket error: %s\n\a", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    ret = recv(conn_fd, selfrt, sizeof(struct selfroute), 0);
-
-    if (ret < sizeof(struct selfroute)) {
-        printf("Received message is not of type struct selfroute, ignored.\n");
-        ret = -1;
-    } else {
-        printf("Received message from Quagga:");
-        send(conn_fd, "Route change received.\n", 6, 0);
-        ret = 0;
-    }
-
-    close(conn_fd);
-    close(sock_fd);
-    return ret;
-
-}
-
-// thread to receive routing table change
-void *receive_rt_change(void *arg) {
-
     int st = 0;
     struct selfroute selfrt;
     char ifname[IF_NAMESIZE];
     char ip_addr_next[INET_ADDRSTRLEN], ip_addr_prefix[INET_ADDRSTRLEN];
 
-    // add-24 del-25
-    while (1) {
-        st = static_route_get(&selfrt);
+    while (!should_exit) {
+        st = static_route_get(sock_fd, &selfrt);
         if (st == 1) {
             if_indextoname(selfrt.ifindex, ifname);
             inet_ntop(AF_INET, &(selfrt.nexthop.s_addr), ip_addr_next, INET_ADDRSTRLEN);
@@ -77,4 +80,7 @@ void *receive_rt_change(void *arg) {
             }
         }
     }
+
+    close(sock_fd);
+    return NULL;
 }
