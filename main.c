@@ -72,7 +72,7 @@ int main() {
         fprintf(stderr, "Error registering signal handler!\n");
         exit(EXIT_FAILURE);
     } else {
-        printf("Starting forwarding...");
+        printf("Starting forwarding...\n");
     }
     
     while (!should_exit) {
@@ -91,7 +91,10 @@ int main() {
             uint16_t header_length = ip_recv_header->ip_hl * 4;
             datalen = recvlen - sizeof(struct ether_header) - header_length;
             DEBUG("\nReceived IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
-
+            if (datalen > 1500) {
+                printf("Packet too large (>MTU), ignored.\n");
+                continue;
+            }
             uint16_t result;
 
 #ifndef SPEEDUP

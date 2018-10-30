@@ -15,7 +15,7 @@ int static_route_get(struct selfroute *selfrt) {
 
 	bzero(&server_addr, sizeof(struct sockaddr_in));
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_addr.s_addr = htonl(inet_addr("127.0.0.1"));
+	server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	server_addr.sin_port = htons(800);
 
 	if (bind(sock_fd, (struct sockaddr *)(&server_addr), sizeof(struct sockaddr)) == -1) {
@@ -40,7 +40,7 @@ int static_route_get(struct selfroute *selfrt) {
         ret = -1;
     } else {
         printf("Received message from Quagga:");
-        send(conn_fd, "Route change received.", 6, 0);
+        send(conn_fd, "Route change received.\n", 6, 0);
         ret = 0;
     }
 
