@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
                 speed_up = 1;
                 break;
             case 'h':
-                printf("USAGE: %s [-v] [-s]\n-v:\tVerbose Mode\n-s:\tSpeed-up Mode\n-h:\tShow this usage\n", cmd_name);
+                printf("TrivialRouter 0.0.1\nAUTHOR: Harry Chen <i@harrychen.xyz>\nUSAGE: %s [-v] [-s]\n-v:\tVerbose Mode\n-s:\tSpeed-up Mode\n-h:\tShow this usage\n", cmd_name);
                 exit(EXIT_SUCCESS);
                 break;
         }
@@ -58,8 +58,11 @@ int main(int argc, char *argv[]) {
     char skbuf[BUF_SIZE];
     int recvfd, sendfd, arp_fd;
     uint16_t recvlen, datalen;
-    unsigned long long forward_length_total = 0;
+    unsigned long long forward_count_last = 0;
+    unsigned long long forward_length_last = 0;
     unsigned long long recv_count = 0, forward_count = 0;
+    unsigned long long forward_length = 0;
+
     time_t last_print = time(NULL);
     time_t now;
 
@@ -110,13 +113,15 @@ int main(int argc, char *argv[]) {
 
         // print statistics
         if ((now = time(NULL)) - last_print == 1) {
-            printf("\rReceived %llu packets, forwarded %llu packets. Speed: "
-                   "%llu Mbps/s",
-                   recv_count, forward_count,
-                   forward_length_total / 1024 / 1024 * 8);
+            printf("\rReceived %llu packets, forwarded %llu packets (%llu KB). Speed: "
+                   "%llu Kbps, %llu pps",
+                   recv_count, forward_count, forward_length / 1024,
+                   forward_length_last / 1024 * 8,
+                   forward_count_last);
             fflush(stdout);
             last_print = now;
-            forward_length_total = 0;
+            forward_length_last = 0;
+            forward_count_last = 0;
         }
 
         recvlen = recv(recvfd, skbuf, sizeof(skbuf), 0);
@@ -242,8 +247,10 @@ int main(int argc, char *argv[]) {
                 exit(EXIT_FAILURE);
             } else {
                 DEBUG("Send succeeded!\n");
-                forward_length_total += recvlen;
+                forward_count_last += 1;
+                forward_length_last += recvlen;
                 forward_count += 1;
+                forward_length += recvlen;
             }
         }
     }
