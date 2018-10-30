@@ -104,11 +104,6 @@ int main() {
             inet_ntop(AF_INET, &(ip_recv_header->ip_dst.s_addr), ip_addr_to, INET_ADDRSTRLEN);
             uint16_t header_length = ip_recv_header->ip_hl * 4;
             datalen = recvlen - sizeof(struct ether_header) - header_length;
-            DEBUG("\nReceived IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
-            if (datalen > 1500) {
-                DEBUG("Packet too large (>MTU), ignored.\n");
-                continue;
-            }
             uint16_t result;
 
 #ifndef SPEEDUP
@@ -138,7 +133,13 @@ int main() {
             }
 
             if (nexthopinfo.host.addr.s_addr == NEXTHOP_SELF.s_addr) {
-                DEBUG("Packet to local address, ignored.\n");
+                // DEBUG("Packet to local address, ignored.\n");
+                continue;
+            }
+
+            DEBUG("\nReceived IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
+            if (datalen > 1500) {
+                DEBUG("Packet too large (>MTU), ignored.\n");
                 continue;
             }
 
