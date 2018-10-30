@@ -92,7 +92,7 @@ int main() {
             datalen = recvlen - sizeof(struct ether_header) - header_length;
             DEBUG("\nReceived IP packet from %s to %s, with payload length %d.\n", ip_addr_from, ip_addr_to, datalen);
             if (datalen > 1500) {
-                printf("Packet too large (>MTU), ignored.\n");
+                DEBUG("Packet too large (>MTU), ignored.\n");
                 continue;
             }
             uint16_t result;
