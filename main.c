@@ -7,6 +7,7 @@
 
 #include "common.h"
 
+#include <signal.h>
 #include <errno.h>
 #include <pthread.h>
 
@@ -18,32 +19,12 @@
 
 #define BUF_SIZE 65535
 
-// thread to receive routing table change
-void *receive_rt_change(void *arg) {
+static int should_exit = 0;
 
-    int st = 0;
-    struct selfroute selfrt;
-    char ifname[IF_NAMESIZE];
-    char ip_addr_next[INET_ADDRSTRLEN], ip_addr_prefix[INET_ADDRSTRLEN];
-
-    // add-24 del-25
-    while (1) {
-        st = static_route_get(&selfrt);
-        if (st == 1) {
-            if_indextoname(selfrt.ifindex, ifname);
-            inet_ntop(AF_INET, &(selfrt.nexthop.s_addr), ip_addr_next, INET_ADDRSTRLEN);
-            inet_ntop(AF_INET, &(selfrt.prefix.s_addr), ip_addr_prefix, INET_ADDRSTRLEN);
-            printf("cmd: %d, prefix: %s/%d, next hop: %s, interface: %d(%s)\n", selfrt.cmdnum, ip_addr_prefix, selfrt.prefixlen, ip_addr_next, selfrt.ifindex, ifname);
-            if (selfrt.cmdnum == 24) {
-                // insert to routing table
-                insert_route(selfrt.prefix, selfrt.prefixlen, ifname, selfrt.ifindex, selfrt.nexthop);
-                printf("Route inserted to table.\n");
-            } else if (selfrt.cmdnum == 25) {
-                // delete from routing table
-                delete_route(selfrt.prefix, selfrt.prefixlen);
-                printf("Route deleted from table.\n");
-            }
-        }
+void signal_handler(int signo) {
+    if (signo == SIGINT) {
+        printf("Received SIGINT, exiting...\n");
+        should_exit = 1;
     }
 }
 
@@ -86,8 +67,15 @@ int main() {
     } else {
         printf("Thread started to receive routing table change.\n");
     }
+
+    if (signal(SIGINT, signal_handler) == SIG_ERR) {
+        fprintf(stderr, "Error registering signal handler!\n");
+        exit(EXIT_FAILURE);
+    } else {
+        printf("Starting forwarding...");
+    }
     
-    while (1) {
+    while (!should_exit) {
         recvlen = recv(recvfd, skbuf, sizeof(skbuf), 0);
         if (recvlen > 0) {
             
@@ -207,5 +195,6 @@ int main() {
     close(recvfd);
     close(sendfd);
     close(arp_fd);
-    return 0;
+
+    return EXIT_SUCCESS;
 }

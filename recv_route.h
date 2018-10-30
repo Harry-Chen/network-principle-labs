@@ -16,4 +16,6 @@ struct selfroute {
 };
 
 int static_route_get(struct selfroute *selfrt);
+void *receive_rt_change(void *arg);
+
 #endif

@@ -1,4 +1,5 @@
 #include "recv_route.h"
+#include "routing_table.h"
 
 #include "common.h"
 
@@ -47,4 +48,33 @@ int static_route_get(struct selfroute *selfrt) {
     close(sock_fd);
     return ret;
 
+}
+
+// thread to receive routing table change
+void *receive_rt_change(void *arg) {
+
+    int st = 0;
+    struct selfroute selfrt;
+    char ifname[IF_NAMESIZE];
+    char ip_addr_next[INET_ADDRSTRLEN], ip_addr_prefix[INET_ADDRSTRLEN];
+
+    // add-24 del-25
+    while (1) {
+        st = static_route_get(&selfrt);
+        if (st == 1) {
+            if_indextoname(selfrt.ifindex, ifname);
+            inet_ntop(AF_INET, &(selfrt.nexthop.s_addr), ip_addr_next, INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(selfrt.prefix.s_addr), ip_addr_prefix, INET_ADDRSTRLEN);
+            printf("cmd: %d, prefix: %s/%d, next hop: %s, interface: %d(%s)\n", selfrt.cmdnum, ip_addr_prefix, selfrt.prefixlen, ip_addr_next, selfrt.ifindex, ifname);
+            if (selfrt.cmdnum == 24) {
+                // insert to routing table
+                insert_route(selfrt.prefix, selfrt.prefixlen, ifname, selfrt.ifindex, selfrt.nexthop);
+                printf("Route inserted to table.\n");
+            } else if (selfrt.cmdnum == 25) {
+                // delete from routing table
+                delete_route(selfrt.prefix, selfrt.prefixlen);
+                printf("Route deleted from table.\n");
+            }
+        }
+    }
 }
