@@ -64,7 +64,7 @@ void *receive_rt_change(void *arg) {
 
     while (!should_exit) {
         st = static_route_get(sock_fd, &selfrt);
-        if (st == 1) {
+        if (st == 0) {
             if_indextoname(selfrt.ifindex, ifname);
             inet_ntop(AF_INET, &(selfrt.nexthop.s_addr), ip_addr_next, INET_ADDRSTRLEN);
             inet_ntop(AF_INET, &(selfrt.prefix.s_addr), ip_addr_prefix, INET_ADDRSTRLEN);
