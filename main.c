@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
         if (recvlen > 0) {
             recv_count += 1;
             // cast to header type
-            struct ethhdr *eth_header = (struct ethhdr *)skbuf;
+            struct ether_header *eth_header = (struct ether_header *)skbuf;
             struct ip *ip_recv_header =
                 (struct ip *)(skbuf + sizeof(struct ether_header));
 
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-            uint16_t result;
+            int result;
 
             if (speed_up == 0) {
                 // verify checksum
@@ -173,19 +173,20 @@ int main(int argc, char *argv[]) {
             }
 
             if (nexthopinfo.host.addr.s_addr == NEXTHOP_ONLINK.s_addr) {
+                // destination is on link, use its ip as next hop
                 nexthopinfo.host.addr.s_addr = ip_recv_header->ip_dst.s_addr;
             }
 
             if (nexthopinfo.host.addr.s_addr == NEXTHOP_SELF.s_addr) {
-                // DEBUG("Packet to local address, ignored.\n");
+                // destination is myself, ignore it
                 continue;
             }
 
             inet_ntop(AF_INET, &(nexthopinfo.host.addr), ip_addr_from,
-                      INET_ADDRSTRLEN);
+                    INET_ADDRSTRLEN);
             DEBUG("Next hop is %s via %s, with prefix length %d\n",
-                  ip_addr_from, nexthopinfo.host.if_name,
-                  nexthopinfo.prefix_len);
+                ip_addr_from, nexthopinfo.host.if_name,
+                nexthopinfo.prefix_len);
 
             // construct ip header
             if (--ip_recv_header->ip_ttl == 0) {
@@ -205,14 +206,17 @@ int main(int argc, char *argv[]) {
             // get MAC address of next hop from ARP table
             macaddr_t mac_addr_to, *mac_addr_from;
             result = arp_get_mac(arp_fd, mac_addr_to, nexthopinfo.host.if_name,
-                                 ip_addr_from);
+                                 nexthopinfo.host.addr.s_addr);
 
-            if (result == 2) {
+            if (result < 0) {
+                fprintf(stderr, "Get ARP entry failed for %s @%s : %s\n", ip_addr_from, nexthopinfo.host.if_name, strerror(errno));
+                exit(EXIT_FAILURE);
+            } else if (result == 2) {
                 DEBUG("Lookup ARP table failed, maybe next hop is unreachable "
                       "or myself?\n");
                 continue;
             } else if (result == 1) {
-                DEBUG("MAC Address for next hop not in the ARP cache.\n");
+                DEBUG("MAC Address for next hop is not in the ARP cache.\n");
                 continue;
             }
 
@@ -228,8 +232,8 @@ int main(int argc, char *argv[]) {
                   *mac_addr_from[3], *mac_addr_from[4], *mac_addr_from[5]);
 
             // fill in ethernet header
-            memcpy(eth_header->h_dest, mac_addr_to, ETH_ALEN);
-            memcpy(eth_header->h_source, *mac_addr_from, ETH_ALEN);
+            memcpy(eth_header->ether_dhost, mac_addr_to, ETH_ALEN);
+            memcpy(eth_header->ether_shost, *mac_addr_from, ETH_ALEN);
 
             // we do not touch the payload of ip packet
 

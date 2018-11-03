@@ -1,8 +1,6 @@
 #include "arp_query.h"
 
-#include "common.h"
-
-int arp_get_mac(int sock_fd, macaddr_t mac, char *if_name, char *ip_str) { 
+int arp_get_mac(int sock_fd, macaddr_t mac, char *if_name, in_addr_t ip_addr) { 
 
     struct arpreq arp_req;
     struct sockaddr_in *sin;
@@ -11,22 +9,20 @@ int arp_get_mac(int sock_fd, macaddr_t mac, char *if_name, char *ip_str) {
 
     memset(&arp_req, 0, sizeof(arp_req));
     sin->sin_family = AF_INET;
-    inet_pton(AF_INET, ip_str, &(sin->sin_addr));
+    sin->sin_addr.s_addr = ip_addr;
     strncpy(arp_req.arp_dev, if_name, IF_NAMESIZE - 1);
 
-    int ret = ioctl(sock_fd, SIOCGARP, &arp_req);
-    if (ret < 0) {
-        fprintf(stderr, "Get ARP entry failed for %s @%s : %s\n", ip_str, if_name, strerror(errno));
-        exit(EXIT_FAILURE);
+    int ret;
+
+    if ((ret = ioctl(sock_fd, SIOCGARP, &arp_req)) < 0)  {
+        return ret;
     }
 
     if (arp_req.arp_flags & ATF_COM) {
         memcpy(mac, (unsigned char *)arp_req.arp_ha.sa_data, sizeof(macaddr_t));
-        ret = 0;
+        return 0;
     } else {
-        ret = 1;
+        return 1;
     }
-    
-    return ret;
 
 }
