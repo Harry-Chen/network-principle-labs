@@ -231,10 +231,15 @@ void *receive_and_handle_rip_messages(void *args) {
         // join multicast groups
         struct ip_mreq mreq;
         mreq.imr_multiaddr.s_addr = inet_addr(RIP_GROUP);
-        mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-        if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
-            fprintf(stderr, "Join multicast group failed: %s\n", strerror(errno));
-            return NULL;
+        
+        for (int i = 0; i < MAX_IF; ++i) {
+            if_info_t *iface = get_interface_info(i);
+            if (iface->name[0] == '\0' || !iface->multicast) continue; // empty interface or cannot multicast
+            mreq.imr_interface = iface->ip;
+            if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+                fprintf(stderr, "Join multicast group failed: %s\n", strerror(errno));
+                return NULL;
+            }
         }
     }
 
