@@ -64,6 +64,6 @@ int main(int argc,char* argv[]) {
 
 	while (!should_exit) {}
 
-	return 0;
+	exit(0);
 }
 
