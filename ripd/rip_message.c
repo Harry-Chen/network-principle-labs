@@ -151,10 +151,10 @@ static void handle_rip_response(TRipEntry *entires, uint32_t size) {
         TRipEntry *entry = &entires[i];
     
         uint32_t prefix_len = 32 - __builtin_ctz(ntohl(entry->stPrefixLen.s_addr));
-        // printf("[Handle Response: %d] Received route: %s/%d via %s metric %d\n", i, 
-        //     inet_ntoa(entry->stAddr), prefix_len, inet_ntoa(entry->stNexthop), entry->uiMetric);
-        printf("[Handle Response: %d] Received route: %d/%d via %d metric %d\n", i, 
-            entry->stAddr.s_addr, prefix_len, entry->stNexthop.s_addr, entry->uiMetric);
+
+        // inet_ntoa use one same memory for every call!!!!
+        printf("[Handle Response: %d] Received route: %s/%d", i, inet_ntoa(entry->stAddr), prefix_len);
+        printf("via %s metric %d\n", inet_ntoa(entry->stNexthop), entry->uiMetric);
 
         TRtEntry *old = lookup_route_exact(entry->stAddr, prefix_len);
 
