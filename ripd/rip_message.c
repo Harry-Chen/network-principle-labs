@@ -74,7 +74,7 @@ static void fill_and_send_multicast_packet(int fd, int mode) {
         for (int j = 0; j < payload_size; ++j) {
             packet->RipEntries[j].stNexthop = iface->ip;
         }
-        fprintf(stderr, "[Send %s] Multicasting from interface %s with IP %s, size %d...", mode ? "Request" : "Update", iface->name, inet_ntoa(iface->ip), length);
+        fprintf(stderr, "[Send %s] Multicasting via interface %s with IP %s, size %d...", mode ? "Request" : "Update", iface->name, inet_ntoa(iface->ip), length);
         if (send(fd, packet, length, 0) < 0) {
             fprintf(stderr, "Failed: %s\n", strerror(errno));
         } else {
@@ -141,7 +141,7 @@ static void handle_rip_request(struct in_addr src) {
 
     int length = RIP_HEADER_LEN + sizeof(TRipEntry) * payload_size;
 
-    fprintf(stderr, "[Response to Request] Send from interface %s from %s to %s, size %d...", iface->name, inet_ntoa(iface->ip),
+    fprintf(stderr, "[Response to Request] Send via interface %s from %s to %s, size %d...", iface->name, inet_ntoa(iface->ip),
         inet_ntoa(src), length);
     if (send(fd, &packet_response, length, 0) < 0) {
         fprintf(stderr, "Failed: %s\n", strerror(errno));
@@ -155,7 +155,7 @@ static void handle_rip_request(struct in_addr src) {
 
 static void handle_rip_response(TRipEntry *entires, uint32_t size) {
     for (int i = 0; i < size; ++i) {
-        TRipEntry *entry = &entires[size];
+        TRipEntry *entry = &entires[i];
         uint32_t prefix_len = 32 - __builtin_ctz(ntohl(entry->stPrefixLen.s_addr));
         printf("[Handle Response: %d] Received routing: %s/%d via %s metric %d\n", size, 
             inet_ntoa(entry->stAddr), prefix_len, inet_ntoa(entry->stNexthop), entry->uiMetric);
@@ -194,6 +194,7 @@ static void handle_rip_message(TRipPkt *message, ssize_t length, struct in_addr 
     TRipEntry *entries = message->RipEntries;
     uint32_t payload_size = (length - RIP_HEADER_LEN) / sizeof(TRipEntry);
     ssize_t remaining_size = length - RIP_HEADER_LEN - payload_size * sizeof(TRipEntry);
+
     if (version != RIP_VERSION || (command != RIP_REQUEST && command != RIP_RESPONSE) || remaining_size != 0) {
         fprintf(stderr, "[Multicast Handle] Invalid RIP message received and ignored from %s.\n", inet_ntoa(src));
         return;
@@ -224,7 +225,7 @@ void *receive_and_handle_rip_messages(void *args) {
     if (fd < 0) return NULL;
 
     if (multicast) {
-        if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &(int){ 1 }, sizeof(int)) < 0) {
+        if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &(int){ 0 }, sizeof(int)) < 0) {
             fprintf(stderr, "Set MULTICAST_LOOP failed: %s\n", strerror(errno));
             return NULL;
         }
@@ -243,20 +244,18 @@ void *receive_and_handle_rip_messages(void *args) {
         }
     }
 
-    char buffer[2][1500];
+    char buffer[1500];
 
-    char *actual_buffer = buffer[multicast];
-
-    struct sockaddr_storage src_addr;
+    struct sockaddr_in src_addr;
     socklen_t src_addr_len = sizeof(src_addr);
 
     while (!should_exit) {
-        ssize_t recv_len = recvfrom(fd, actual_buffer, sizeof(actual_buffer), 0, (struct sockaddr*) &src_addr, &src_addr_len);
+        ssize_t recv_len = recvfrom(fd, buffer, sizeof(buffer), 0, (struct sockaddr*) &src_addr, &src_addr_len);
         if (recv_len < 0) {
             fprintf(stderr, "[Receive Messages] Receive from UDP socket failed: %s\n", strerror(errno));
             break;
         } else {
-            handle_rip_message((TRipPkt *)actual_buffer, recv_len, ((struct sockaddr_in *)&src_addr)->sin_addr);
+            handle_rip_message((TRipPkt *)buffer, recv_len, src_addr.sin_addr);
         }
     }
 
