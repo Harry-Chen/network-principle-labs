@@ -25,7 +25,7 @@ void init_local_interfaces() {
  
         family = ifa->ifa_addr->sa_family;
   
-        // need only interfaces with IPv4 address and is not lo & support multicast
+        // filter only interfaces with IPv4 address and is not lo & support multicast
         if (family == AF_INET && !(ifa->ifa_flags & IFF_LOOPBACK)) {
             uint32_t if_index = if_nametoindex(ifa->ifa_name);
 
@@ -46,7 +46,7 @@ void init_local_interfaces() {
                 .uiMetric = 0,
                 .uiInterfaceIndex = if_index
             };
-            insert_route(&local_route_entry);
+            insert_route_local(&local_route_entry);
 
             strcpy(if_info[if_index].name, ifa->ifa_name);
             if_info[if_index].ip = *addr;

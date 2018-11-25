@@ -3,10 +3,10 @@
 
 #include "common.h"
 
-void send_all_routes(in_addr_t dest);
+void send_request_messages();
 
-void send_rip_request();
+void *send_update_messages(void *args);
 
-void handle_rip_messages();
+void *receive_and_handle_rip_messages(void *args);
 
 #endif

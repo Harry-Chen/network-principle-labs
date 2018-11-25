@@ -12,7 +12,7 @@ void init_route() {
     routing_table = rt_init();
 }
 
-void insert_route(TRtEntry *entry) {
+void insert_route_local(TRtEntry *entry) {
     TRtEntry *item = (TRtEntry*) malloc(sizeof(TRtEntry));
     memcpy(item, entry, sizeof(TRtEntry));
     table[table_size] = item;
@@ -20,18 +20,33 @@ void insert_route(TRtEntry *entry) {
     table_size++;
 }
 
-TRtEntry *lookup_route_exact(struct in_addr dst_addr, uint32_t prefix) {
-    uint32_t rt_index = rt_match(routing_table, ntohl(dst_addr.s_addr), prefix, 1);
-
-    if (rt_index == 0) {
-        return NULL;
-    } else {
-        return table[rt_index];
-    }
+void insert_route_rip(TRipEntry *entry) {
+    TRtEntry *item = (TRtEntry*) malloc(sizeof(TRtEntry));
+    item->stIpPrefix = entry->stAddr;
+    item->uiPrefixLen = 32 - __builtin_ctz(ntohl(entry->stPrefixLen.s_addr));
+    item->uiMetric = entry->uiMetric;
+    item->stNexthop = entry->stNexthop;
+    TRtEntry *local_route = lookup_route_longest(item->stNexthop);
+    item->uiInterfaceIndex = local_route->uiInterfaceIndex;
+    table[table_size] = item;
+    rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen, table_size);
+    table_size++;
+    // TODO: notify forwarder via tcp socket
 }
 
-void delete_route(TRtEntry *entry) {
+TRtEntry *lookup_route_longest(struct in_addr dst_addr) {
+    uint32_t rt_index = rt_lookup(routing_table, ntohl(dst_addr.s_addr));
+    return rt_index == 0 ? NULL : table[rt_index];
+}
+
+TRtEntry *lookup_route_exact(struct in_addr dst_addr, uint32_t prefix) {
+    uint32_t rt_index = rt_match(routing_table, ntohl(dst_addr.s_addr), prefix, 1);
+    return rt_index == 0 ? NULL : table[rt_index];
+}
+
+void delete_route_rip(TRtEntry *entry) {
     rt_remove(routing_table, ntohl(entry->stIpPrefix.s_addr), entry->uiPrefixLen);
+    // TODO: notify forwarder via tcp socket
 }
 
 
@@ -45,7 +60,7 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr iface_addr) {
         rip_entry[size].stAddr = rt_entry->stIpPrefix;
         rip_entry[size].stPrefixLen.s_addr = htonl(((~0) >> (32 - rt_entry->uiPrefixLen)) << (32 - rt_entry->uiPrefixLen));
         rip_entry[size].stNexthop = iface_addr;
-        rip_entry[size].uiMetric = rt_entry->uiMetric;
+        rip_entry[size].uiMetric = htonl(rt_entry->uiMetric);
         ++size;
     }
 

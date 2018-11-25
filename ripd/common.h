@@ -8,8 +8,10 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
 #include <net/if.h>
 #include <pthread.h>
+#include <errno.h>
 #include <ifaddrs.h>
 #include <arpa/inet.h>
 
@@ -29,6 +31,8 @@
 #define RIP_CHECK_FAIL  0
 #define AddRoute        24
 #define DelRoute        25
+
+extern int should_exit;
 
 typedef struct RipEntry
 {
