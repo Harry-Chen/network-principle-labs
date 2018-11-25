@@ -12,7 +12,9 @@ typedef void *routing_table_t;
 extern routing_table_t rt_init();
 extern void rt_insert(routing_table_t table, uint32_t ip, uint32_t prefix, uint32_t index);
 extern void rt_remove(routing_table_t table, uint32_t ip, uint32_t prefix);
+extern uint32_t rt_match(routing_table_t table, uint32_t ip, uint32_t prefix, uint32_t exact);
 extern uint32_t rt_lookup(routing_table_t table, uint32_t ip);
 extern void rt_cleanup(routing_table_t table);
+extern uint32_t rt_iterate(routing_table_t table, uint32_t nextOf);
 
 #endif // __RT_H__

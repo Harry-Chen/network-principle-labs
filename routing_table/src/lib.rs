@@ -44,21 +44,65 @@ pub extern fn rt_remove(ptr: *mut RoutingTable, ip: uint32_t, prefix: uint32_t) 
 }
 
 #[no_mangle]
-pub extern fn rt_lookup(ptr: *mut RoutingTable, ip: uint32_t) -> uint32_t {
+pub extern fn rt_match(ptr: *mut RoutingTable, ip: uint32_t, prefix: uint32_t, exact: uint32_t) -> uint32_t {
     let _tb = unsafe { &mut *ptr };
     let _ip = Ipv4Addr::from(ip);
-    let result = _tb.longest_match(_ip);
-    let index = match result {
-        Some((_, _, index)) => index.clone(),
-        None => 0, // 0 means not found
+    
+    let result = match exact {
+        0 => match _tb.longest_match(_ip) {
+            Some((_, _, index)) => index.clone(),
+            None => 0
+        }
+        _ => match _tb.exact_match(_ip, prefix) {
+            Some(index) => index.clone(),
+            None => 0 // 0 means not found
+        }
     };
-    log!("Lookup: {} via {}", _ip, index);
-    index
+
+    log!("Match: {}/{} via {} mode {}", _ip, prefix, result, match exact {
+        0 => "longest",
+        _ => "exact"
+    });
+    result
 }
+
+#[no_mangle]
+pub extern fn rt_lookup(ptr: *mut RoutingTable, ip: uint32_t) -> uint32_t {
+    rt_match(ptr, ip, 0, 0)
+} 
 
 #[no_mangle]
 pub extern fn rt_cleanup(ptr: *mut RoutingTable) {
     log!("{}", "Cleanup");
     let _tb: Box<RoutingTable> = unsafe{ std::mem::transmute(ptr) };
     // drop this object
+}
+
+#[no_mangle]
+pub extern fn rt_iterate(ptr: *mut RoutingTable, next_of: uint32_t) -> uint32_t {
+    let _tb = unsafe { &mut *ptr };
+
+    let mut iter = _tb.iter();
+
+    if next_of != 0 {
+        loop {
+            match iter.next() {
+                Some((_, _, index)) => {
+                    if index == &next_of {
+                        break;
+                    }
+                },
+                None => { break }
+            }
+        }
+    }
+    
+    let index = match iter.next() {
+        Some((_, _, index)) => index.clone() as i32,
+        None => -1, // -1 means end of iteration
+    };
+
+    log!("Iterate: from {}, get {}", next_of, index);
+
+    index as uint32_t
 }

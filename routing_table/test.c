@@ -32,6 +32,14 @@ int main() {
     result = rt_lookup(table, IP("100.64.0.100"));
     assert(result == 2);
 
+    // exact match found
+    result = rt_match(table, IP("100.64.1.0"), 24, 1);
+    assert(result == 3);
+
+    // exact match not found
+    result = rt_match(table, IP("100.64.1.100"), 24, 1);
+    assert(result == 0);
+
     // default: not found
     result = rt_lookup(table, IP("200.200.200.200"));
     assert(result == 0);
@@ -45,6 +53,11 @@ int main() {
     rt_remove(table, IP("0.0.0.0"), 0);
     result = rt_lookup(table, IP("200.200.200.200"));
     assert(result == 0);
+
+    // test iteration
+    result = 0;
+    while ((result = rt_iterate(table, result)) != -1) {}
+    assert(result == -1);
 
     rt_cleanup(table);
 
