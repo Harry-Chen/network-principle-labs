@@ -33,8 +33,8 @@ int main(int argc,char* argv[]) {
 	// send initial reuqest to get rip table from other hosts
 	send_rip_request();
 
-	// // infinitely receive rip messages and handle it
-	// handle_rip_messages();
+	// infinitely receive rip messages and handle it
+	handle_rip_messages();
 
 	sleep(20);
 

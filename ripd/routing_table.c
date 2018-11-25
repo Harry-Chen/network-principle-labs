@@ -35,7 +35,7 @@ void delete_route(TRtEntry *entry) {
 }
 
 
-int fill_rip_packet(TRipEntry *rip_entry) {
+int fill_rip_packet(TRipEntry *rip_entry, struct in_addr iface_addr) {
     int size = 0;
     int index = 0;
     while ((index = rt_iterate(routing_table, index)) != -1) {
@@ -44,7 +44,7 @@ int fill_rip_packet(TRipEntry *rip_entry) {
         rip_entry[size].usTag = 0;
         rip_entry[size].stAddr = rt_entry->stIpPrefix;
         rip_entry[size].stPrefixLen.s_addr = htonl(((~0) >> (32 - rt_entry->uiPrefixLen)) << (32 - rt_entry->uiPrefixLen));
-        rip_entry[size].stNexthop = rt_entry->stNexthop;
+        rip_entry[size].stNexthop = iface_addr;
         rip_entry[size].uiMetric = rt_entry->uiMetric;
         ++size;
     }

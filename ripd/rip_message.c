@@ -3,8 +3,10 @@
 #include "local_route.h"
 
 static TRipPkt packet;
+static int UPDATE = 0;
+static int REQUEST = 1;
 
-static int establish_rip_fd(in_addr_t dest) {
+static int establish_rip_fd(in_addr_t dest, uint8_t do_connect) {
     int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (fd < 0) {
         fprintf(stderr, "Error opening socket!\n");
@@ -25,18 +27,32 @@ static int establish_rip_fd(in_addr_t dest) {
         return -1;
     }
 
-    remote.sin_family = AF_INET;
-    remote.sin_port = htons(RIP_PORT);
-    remote.sin_addr.s_addr = dest;
-    if (connect(fd, (struct sockaddr *)&remote, sizeof(remote)) < 0) {
-        fprintf(stderr, "Connect to remote RIP port failed!\n");
-        return -1;
+    if (do_connect) {
+        remote.sin_family = AF_INET;
+        remote.sin_port = htons(RIP_PORT);
+        remote.sin_addr.s_addr = dest;
+        if (connect(fd, (struct sockaddr *)&remote, sizeof(remote)) < 0) {
+            fprintf(stderr, "Connect to remote RIP port failed!\n");
+            return -1;
+        }
     }
 
     return fd;
 }
 
-static void send_multicast_packet(int fd, void *data, uint32_t length, char* source) {
+static void fill_and_send_multicast_packet(int fd, int mode) {
+
+    int length = RIP_HEADER_LEN;
+    int payload_size = 0;
+
+    if (mode == UPDATE) {
+        struct in_addr placeholder = {
+            .s_addr = 0
+        };
+        payload_size = fill_rip_packet(packet.RipEntries, placeholder);
+        length += sizeof(TRipEntry) * payload_size;
+    }
+
     for (int i = 0; i < MAX_IF; ++i) {
         if_info_t *iface = get_interface_info(i);
         if (iface->name[0] == '\0' || !iface->multicast) continue; // empty interface or cannot multicast
@@ -44,8 +60,12 @@ static void send_multicast_packet(int fd, void *data, uint32_t length, char* sou
             fprintf(stderr, "Set IP_MULTICAST_IF failed for %s with IP %s!\n", iface->name, inet_ntoa(iface->ip));
             continue;
         }
-        fprintf(stderr, "[%s] Send from interface %s with IP %s, size %d...", source, iface->name, inet_ntoa(iface->ip), length);
-        if (send(fd, data, length, 0) < 0) {
+        // nexthop should be ip of the interface that is sending packet from
+        for (int j = 0; j < payload_size; ++j) {
+            packet.RipEntries[j].stNexthop = iface->ip;
+        }
+        fprintf(stderr, "[%s] Send from interface %s with IP %s, size %d...", mode ? "Request" : "Update", iface->name, inet_ntoa(iface->ip), length);
+        if (send(fd, &packet, length, 0) < 0) {
             fprintf(stderr, "Failed!\n");
         } else {
             fprintf(stderr, "Succeeded!\n");
@@ -55,19 +75,16 @@ static void send_multicast_packet(int fd, void *data, uint32_t length, char* sou
 
 void send_all_routes(in_addr_t dest) {
 
-    int fd = establish_rip_fd(dest);
+    int fd = establish_rip_fd(dest, 1);
     if (fd < 0) return;
 
     bzero(&packet, sizeof(TRipPkt));
 
     packet.ucCommand = RIP_RESPONSE;
     packet.ucVersion = RIP_VERSION;
-    int payload_size = fill_rip_packet(packet.RipEntries);
-    
-    int length = RIP_HEADER_LEN + sizeof(TRipEntry) * payload_size;
 
     printf("Start sending RIP update...\n");
-    send_multicast_packet(fd, &packet, length, "Update");
+    fill_and_send_multicast_packet(fd, UPDATE);
 
     close(fd);
 
@@ -76,7 +93,7 @@ void send_all_routes(in_addr_t dest) {
 
 void send_rip_request() {
 
-    int fd = establish_rip_fd(inet_addr(RIP_GROUP));
+    int fd = establish_rip_fd(inet_addr(RIP_GROUP), 1);
     if (fd < 0) return;
 
     if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &(int){ 1 }, sizeof(int)) < 0) {
@@ -88,8 +105,13 @@ void send_rip_request() {
     packet.ucVersion = RIP_VERSION;
     
     printf("Start sending RIP request...\n");
-    send_multicast_packet(fd, &packet, RIP_HEADER_LEN, "Request");
+    fill_and_send_multicast_packet(fd, REQUEST);
 
     close(fd);
+
+}
+
+
+void handle_rip_messages() {
 
 }
