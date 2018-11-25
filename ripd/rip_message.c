@@ -195,7 +195,7 @@ static void handle_rip_message(TRipPkt *message, ssize_t length, struct in_addr 
     uint32_t payload_size = (length - RIP_HEADER_LEN) / sizeof(TRipEntry);
     ssize_t remaining_size = length - RIP_HEADER_LEN - payload_size * sizeof(TRipEntry);
     if (version != RIP_VERSION || (command != RIP_REQUEST && command != RIP_RESPONSE) || remaining_size != 0) {
-        fprintf(stderr, "[Multicast Handle] Invalid RIP message received and ignored.\n");
+        fprintf(stderr, "[Multicast Handle] Invalid RIP message received and ignored from %s.\n", inet_ntoa(src));
         return;
     }
 
