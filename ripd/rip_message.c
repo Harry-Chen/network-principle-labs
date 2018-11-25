@@ -100,7 +100,7 @@ static void send_all_routes(in_addr_t dest) {
 void *send_update_messages(void *args) {
 	while (1) {
 		send_all_routes(inet_addr(RIP_GROUP));
-		sleep(30);
+		sleep(5);
 	}
 }
 
@@ -190,14 +190,14 @@ static void handle_rip_message(TRipPkt *message, ssize_t length, struct in_addr 
     uint32_t payload_size = (length - RIP_HEADER_LEN) / sizeof(TRipEntry);
     ssize_t remaining_size = length - RIP_HEADER_LEN - payload_size * sizeof(TRipEntry);
     if (version != RIP_VERSION || (command != RIP_REQUEST && command != RIP_RESPONSE) || remaining_size != 0) {
-        fprintf(stderr, "Invalid RIP message received and ignored.\n");
+        fprintf(stderr, "[Multicast Handle] Invalid RIP message received and ignored.\n");
         return;
     }
 
     switch (command) {
         case RIP_REQUEST:
             if (payload_size != 1 || entries->usFamily != 0 || entries->uiMetric != ntohl(16)) {
-                fprintf(stderr, "Received invalid RIP request, will not respond.\n");
+                fprintf(stderr, "[Multicast Handle] Received invalid RIP request, will not respond.\n");
                 return;
             }
             handle_rip_request(src);
@@ -240,7 +240,7 @@ void *receive_and_handle_rip_messages(void *args) {
     while (!should_exit) {
         ssize_t recv_len = recvfrom(fd, buffer, sizeof(buffer), 0, (struct sockaddr*) &src_addr, &src_addr_len);
         if (recv_len < 0) {
-            fprintf(stderr, "Receive from UDP socket failed: %s\n", strerror(errno));
+            fprintf(stderr, "[Receive Messages] Receive from UDP socket failed: %s\n", strerror(errno));
             break;
         } else {
             handle_rip_message((TRipPkt *)buffer, recv_len, ((struct sockaddr_in *)&src_addr)->sin_addr);

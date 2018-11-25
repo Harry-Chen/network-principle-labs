@@ -23,6 +23,14 @@ int main(int argc,char* argv[]) {
 	// find all local interfaces, and add link-scoped routes to rip routing table
 	init_local_interfaces();
 
+	// install signal handler
+	if (signal(SIGINT, signal_handler) == SIG_ERR) {
+        fprintf(stderr, "Error registering signal handler!\n");
+        exit(EXIT_FAILURE);
+    } else {
+        printf("Starting RIP daemon...\n");
+    }
+
 	// start thread to send updating messages every 30 seconds
 	pthread_t tid_update, tid_recv_response, tid_recv_multicast;
     int pd_update, pd_recv_response, pd_recv_multicast;

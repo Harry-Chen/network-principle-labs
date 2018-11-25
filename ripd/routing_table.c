@@ -2,26 +2,71 @@
 #include "../routing_table/rt.h"
 
 static routing_table_t routing_table;
+static int CMD_ADD = 24;
+static int CMD_DEL = 25;
 
-#define MAX_TABLE_SIZE (1<<20)
+#define MAX_TABLE_SIZE (1 << 20)
 static TRtEntry *table[MAX_TABLE_SIZE];
 static int table_size = 1;
 
-
-void init_route() {
-    routing_table = rt_init();
-}
+void init_route() { routing_table = rt_init(); }
 
 void insert_route_local(TRtEntry *entry) {
-    TRtEntry *item = (TRtEntry*) malloc(sizeof(TRtEntry));
+    TRtEntry *item = (TRtEntry *)malloc(sizeof(TRtEntry));
     memcpy(item, entry, sizeof(TRtEntry));
     table[table_size] = item;
-    rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen, table_size);
+    rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen,
+              table_size);
     table_size++;
 }
 
+static int notify_forwarder(TRtEntry *entry, uint32_t cmd) {
+    
+    int sendfd;
+    int sendlen = 0;
+
+    struct sockaddr_in dst_addr = {
+        .sin_family = AF_INET,
+        .sin_port = htons(800)
+    };
+    dst_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    TSockRoute route;
+    route.uiPrefixLen = entry->uiPrefixLen;
+    route.stIpPrefix = entry->stIpPrefix;
+    route.uiIfindex = entry->uiInterfaceIndex;
+    route.stNexthop = entry->stNexthop;
+    route.uiCmd = cmd;
+
+    if ((sendfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        fprintf(stderr, "[Notify] Error opening TCP socket: %s\n", strerror(errno));
+        return -1;
+    }
+    int tcpcount = 0;
+    while (tcpcount < 6) {
+        if (connect(sendfd, (struct sockaddr *)&dst_addr, sizeof(dst_addr)) < 0) {
+            tcpcount++;
+        } else {
+            break;
+        }
+        usleep(10000);
+    }
+    if (tcpcount < 6) {
+        sendlen = send(sendfd, &route, sizeof(route), 0);
+        if (sendlen < 0) {
+            fprintf(stderr, "[Notify] Sending route item failed: %s\n", strerror(errno));
+            return -1;
+        } else {
+            fprintf(stderr, "[Notify] Successfully sent route item to forwarder\n");
+        }
+    }
+
+    close(sendfd);
+    return 0;
+}
+
 void insert_route_rip(TRipEntry *entry) {
-    TRtEntry *item = (TRtEntry*) malloc(sizeof(TRtEntry));
+    TRtEntry *item = (TRtEntry *)malloc(sizeof(TRtEntry));
     item->stIpPrefix = entry->stAddr;
     item->uiPrefixLen = 32 - __builtin_ctz(ntohl(entry->stPrefixLen.s_addr));
     item->uiMetric = entry->uiMetric;
@@ -29,9 +74,10 @@ void insert_route_rip(TRipEntry *entry) {
     TRtEntry *local_route = lookup_route_longest(item->stNexthop);
     item->uiInterfaceIndex = local_route->uiInterfaceIndex;
     table[table_size] = item;
-    rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen, table_size);
+    rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen,
+              table_size);
     table_size++;
-    // TODO: notify forwarder via tcp socket
+    notify_forwarder(item, CMD_ADD);
 }
 
 TRtEntry *lookup_route_longest(struct in_addr dst_addr) {
@@ -40,15 +86,16 @@ TRtEntry *lookup_route_longest(struct in_addr dst_addr) {
 }
 
 TRtEntry *lookup_route_exact(struct in_addr dst_addr, uint32_t prefix) {
-    uint32_t rt_index = rt_match(routing_table, ntohl(dst_addr.s_addr), prefix, 1);
+    uint32_t rt_index =
+        rt_match(routing_table, ntohl(dst_addr.s_addr), prefix, 1);
     return rt_index == 0 ? NULL : table[rt_index];
 }
 
 void delete_route_rip(TRtEntry *entry) {
-    rt_remove(routing_table, ntohl(entry->stIpPrefix.s_addr), entry->uiPrefixLen);
-    // TODO: notify forwarder via tcp socket
+    rt_remove(routing_table, ntohl(entry->stIpPrefix.s_addr),
+              entry->uiPrefixLen);
+    notify_forwarder(entry, CMD_DEL);
 }
-
 
 int fill_rip_packet(TRipEntry *rip_entry, struct in_addr iface_addr) {
     int size = 0;
@@ -58,7 +105,9 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr iface_addr) {
         rip_entry[size].usFamily = htons(AF_INET);
         rip_entry[size].usTag = 0;
         rip_entry[size].stAddr = rt_entry->stIpPrefix;
-        rip_entry[size].stPrefixLen.s_addr = htonl(((~0) >> (32 - rt_entry->uiPrefixLen)) << (32 - rt_entry->uiPrefixLen));
+        rip_entry[size].stPrefixLen.s_addr =
+            htonl(((~0) >> (32 - rt_entry->uiPrefixLen))
+                  << (32 - rt_entry->uiPrefixLen));
         rip_entry[size].stNexthop = iface_addr;
         rip_entry[size].uiMetric = htonl(rt_entry->uiMetric);
         ++size;

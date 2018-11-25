@@ -69,6 +69,8 @@ typedef struct SockRoute
 	uint32_t uiIfindex;
 	struct in_addr stNexthop;
 	uint32_t uiCmd;
+	// for compatibility purpose
+	char cIfName[10];
 } TSockRoute;
 
 #endif
