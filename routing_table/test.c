@@ -33,11 +33,14 @@ int main() {
     assert(result == 2);
 
     // exact match found
-    result = rt_match(table, IP("100.64.1.0"), 24, 1);
-    assert(result == 3);
+    result = rt_match(table, IP("100.64.0.0"), 24, 1);
+    assert(result == 2);
+
+    result = rt_match(table, IP("100.64.0.0"), 10, 1);
+    assert(result == 4);
 
     // exact match not found
-    result = rt_match(table, IP("100.64.1.100"), 24, 1);
+    result = rt_match(table, IP("100.64.3.0"), 24, 1);
     assert(result == 0);
 
     // default: not found
