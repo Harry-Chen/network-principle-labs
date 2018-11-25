@@ -8,8 +8,12 @@ EXE    := ripd
 CC      := ${CROSS_COMPILE}gcc
 CFLAGS  := -Wall -O3
 
-CFLAGS_RELEASE := -Wl,--strip-all
+CFLAGS_RELEASE := -Wl,--strip-all -static-libstdc++ -static-libgcc -static
 CFLAGS_DEBUG   := -g
+
+LIB_NAME := routing_table
+LIB_FILENAME := lib$(LIB_NAME)
+LIB_PATH := ../$(LIB_NAME)/target/release
 
 
 all: $(OBJ) $(OBJ)/$(EXE).release $(OBJ)/$(EXE).debug
@@ -17,17 +21,24 @@ all: $(OBJ) $(OBJ)/$(EXE).release $(OBJ)/$(EXE).debug
 $(OBJ):
 	mkdir -p $@
 
-$(OBJ)/$(EXE).release: $(OBJS)
+$(OBJ)/$(EXE).release: $(OBJS) $(OBJ)/$(LIB_FILENAME).a
 	$(CC) $(CFLAGS) $(CFLAGS_RELEASE) -o $@ $^ -pthread -ldl
 
-$(OBJ)/$(EXE).debug: $(OBJS)
+$(OBJ)/$(EXE).debug: $(OBJS) $(OBJ)/$(LIB_FILENAME).a
 	$(CC) $(CFLAGS) $(CFLAGS_DEBUG) -o $@ $^ -pthread -ldl
 
-$(OBJ)/%.o: %.c %.h
+$(OBJ)/$(LIB_FILENAME).a: $(LIB_PATH)/$(LIB_FILENAME).a
+	cp $^ $@
+
+$(LIB_PATH)/$(LIB_FILENAME).a:
+	$(MAKE) -C ../$(LIB_NAME) release
+
+$(OBJ)/%.o: %.c %.h common.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(OBJ)/main.o: main.c
+$(OBJ)/main.o: main.c common.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean :
 	rm -rf $(OBJ)
+	$(MAKE) -C ../$(LIB_NAME) clean
