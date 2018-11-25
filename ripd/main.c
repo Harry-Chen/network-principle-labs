@@ -44,22 +44,12 @@ int main(int argc,char* argv[]) {
 	// send initial reuqest to get rip table from other hosts
 	send_request_messages();
 
-	// receive unicast reponse messages
-	uint8_t multicast = 0;
-	if ((pd_recv_response = pthread_create(&tid_recv_response, NULL, receive_and_handle_rip_messages, &multicast)) < 0) {
+	// receive reponse messages
+	if ((pd_recv_response = pthread_create(&tid_recv_response, NULL, receive_and_handle_rip_messages, NULL)) < 0) {
         fprintf(stderr, "Error creating thread: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     } else {
         printf("Thread started to receive response messages.\n");
-    }
-
-	// receive multicast response messages
-	multicast = 1;
-	if ((pd_recv_multicast = pthread_create(&tid_recv_multicast, NULL, receive_and_handle_rip_messages, &multicast)) < 0) {
-        fprintf(stderr, "Error creating thread: %s\n", strerror(errno));
-        exit(EXIT_FAILURE);
-    } else {
-        printf("Thread started to receive multicast messages.\n");
     }
 
 	while (!should_exit) {}

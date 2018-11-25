@@ -149,10 +149,15 @@ static void handle_rip_request(struct in_addr src) {
 static void handle_rip_response(TRipEntry *entires, uint32_t size) {
     for (int i = 0; i < size; ++i) {
         TRipEntry *entry = &entires[i];
+    
         uint32_t prefix_len = 32 - __builtin_ctz(ntohl(entry->stPrefixLen.s_addr));
-        printf("[Handle Response: %d] Received route: %s/%d via %s metric %d\n", i, 
-            inet_ntoa(entry->stAddr), prefix_len, inet_ntoa(entry->stNexthop), entry->uiMetric);
+        // printf("[Handle Response: %d] Received route: %s/%d via %s metric %d\n", i, 
+        //     inet_ntoa(entry->stAddr), prefix_len, inet_ntoa(entry->stNexthop), entry->uiMetric);
+        printf("[Handle Response: %d] Received route: %d/%d via %d metric %d\n", i, 
+            entry->stAddr.s_addr, prefix_len, entry->stNexthop.s_addr, entry->uiMetric);
+
         TRtEntry *old = lookup_route_exact(entry->stAddr, prefix_len);
+
         if (old == NULL) { // new item
             if (++entry->uiMetric < RIP_INFINITY) {
                 insert_route_rip(entry);
@@ -211,29 +216,27 @@ static void handle_rip_message(TRipPkt *message, ssize_t length, struct in_addr 
 
 void *receive_and_handle_rip_messages(void *args) {
 
-    uint8_t multicast = *(uint8_t *)args;
 
-    // listen on all local interfaces only
+    // listen on all local interfaces
     int fd = establish_rip_fd(htonl(INADDR_ANY), 0, 0);
     if (fd < 0) return NULL;
 
-    if (multicast) {
-        if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &(int){ 0 }, sizeof(int)) < 0) {
-            fprintf(stderr, "Set MULTICAST_LOOP failed: %s\n", strerror(errno));
+    if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &(int){ 0 }, sizeof(int)) < 0) {
+        fprintf(stderr, "Set MULTICAST_LOOP failed: %s\n", strerror(errno));
+        return NULL;
+    }
+
+    // join multicast groups
+    struct ip_mreq mreq;
+    mreq.imr_multiaddr.s_addr = inet_addr(RIP_GROUP);
+    
+    for (int i = 0; i < MAX_IF; ++i) {
+        if_info_t *iface = get_interface_info(i);
+        if (iface->name[0] == '\0' || !iface->multicast) continue; // empty interface or cannot multicast
+        mreq.imr_interface = iface->ip;
+        if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+            fprintf(stderr, "Join multicast group failed: %s\n", strerror(errno));
             return NULL;
-        }
-        // join multicast groups
-        struct ip_mreq mreq;
-        mreq.imr_multiaddr.s_addr = inet_addr(RIP_GROUP);
-        
-        for (int i = 0; i < MAX_IF; ++i) {
-            if_info_t *iface = get_interface_info(i);
-            if (iface->name[0] == '\0' || !iface->multicast) continue; // empty interface or cannot multicast
-            mreq.imr_interface = iface->ip;
-            if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
-                fprintf(stderr, "Join multicast group failed: %s\n", strerror(errno));
-                return NULL;
-            }
         }
     }
 
@@ -248,7 +251,7 @@ void *receive_and_handle_rip_messages(void *args) {
             fprintf(stderr, "[Receive Messages] Receive from UDP socket failed: %s\n", strerror(errno));
             break;
         } else {
-            printf("[Receive Messages] UDP packet from %s\n", inet_ntoa(src_addr.sin_addr));
+            printf("\n[Receive Messages] UDP packet from %s\n", inet_ntoa(src_addr.sin_addr));
             handle_rip_message((TRipPkt *)buffer, recv_len, src_addr.sin_addr);
         }
     }
