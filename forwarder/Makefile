@@ -13,7 +13,7 @@ CFLAGS_DEBUG   := -g
 
 LIB_NAME := routing_table
 LIB_FILENAME := lib$(LIB_NAME)
-LIB_PATH := $(LIB_NAME)/target/release
+LIB_PATH := ../$(LIB_NAME)/target/release
 
 
 all: $(OBJ) $(OBJ)/$(EXE).release $(OBJ)/$(EXE).debug
@@ -31,7 +31,7 @@ $(OBJ)/$(LIB_FILENAME).a: $(LIB_PATH)/$(LIB_FILENAME).a
 	cp $^ $@
 
 $(LIB_PATH)/$(LIB_FILENAME).a:
-	$(MAKE) -C $(LIB_NAME) release
+	$(MAKE) -C ../$(LIB_NAME) release
 
 $(OBJ)/%.o: %.c %.h common.h
 	$(CC) $(CFLAGS) -o $@ -c $<
@@ -41,4 +41,4 @@ $(OBJ)/main.o: main.c common.h
 
 clean :
 	rm -rf $(OBJ)
-	$(MAKE) -C $(LIB_NAME) clean
+	$(MAKE) -C ../$(LIB_NAME) clean
