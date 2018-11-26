@@ -12,6 +12,7 @@ void signal_handler(int signo) {
     if (signo == SIGINT) {
         printf("Received SIGINT, exiting...\n");
         should_exit = 1;
+        exit(0);
     }
 }
 
@@ -54,6 +55,6 @@ int main(int argc,char* argv[]) {
 
 	while (!should_exit) {}
 
-	exit(0);
+	return 0;
 }
 
