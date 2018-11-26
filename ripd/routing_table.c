@@ -3,9 +3,9 @@
 
 #include "routing_table.h"
 #include "local_route.h"
-#include "../routing_table/rt.h"
+#include "rt.h"
 
-static routing_table_t routing_table;
+
 static int CMD_ADD = 24;
 static int CMD_DEL = 25;
 
@@ -19,7 +19,7 @@ static pthread_mutex_t mutex;
 void init_route() { 
     pthread_rwlock_init(&rwlock, NULL);
     pthread_mutex_init(&mutex, NULL);
-    routing_table = rt_init(); 
+    rt_init(); 
 }
 
 void insert_route_local(TRtEntry *entry) {
@@ -29,7 +29,7 @@ void insert_route_local(TRtEntry *entry) {
 
     pthread_rwlock_wrlock(&rwlock);
     table[table_size] = item;
-    rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen, table_size);
+    rt_insert(ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen, table_size);
     table_size++;
     pthread_rwlock_unlock(&rwlock);
 
@@ -85,7 +85,7 @@ void insert_route_rip(TRipEntry *entry) {
 
     pthread_rwlock_wrlock(&rwlock);
     table[table_size] = item;
-    rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen,
+    rt_insert(ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen,
               table_size);
     table_size++;
     pthread_rwlock_unlock(&rwlock);
@@ -95,7 +95,7 @@ void insert_route_rip(TRipEntry *entry) {
 
 TRtEntry *lookup_route_longest(struct in_addr dst_addr) {
     pthread_rwlock_rdlock(&rwlock);
-    uint32_t rt_index = rt_lookup(routing_table, ntohl(dst_addr.s_addr));
+    uint32_t rt_index = rt_lookup(ntohl(dst_addr.s_addr));
     pthread_rwlock_unlock(&rwlock);
     return rt_index == 0 ? NULL : table[rt_index];
 }
@@ -103,14 +103,14 @@ TRtEntry *lookup_route_longest(struct in_addr dst_addr) {
 TRtEntry *lookup_route_exact(struct in_addr dst_addr, uint32_t prefix) {
     pthread_rwlock_rdlock(&rwlock);
     uint32_t rt_index =
-        rt_match(routing_table, ntohl(dst_addr.s_addr), prefix, 1);
+        rt_match(ntohl(dst_addr.s_addr), prefix, 1);
     pthread_rwlock_unlock(&rwlock);
     return rt_index == 0 ? NULL : table[rt_index];
 }
 
 void delete_route_rip(TRtEntry *entry) {
     pthread_rwlock_wrlock(&rwlock);
-    rt_remove(routing_table, ntohl(entry->stIpPrefix.s_addr),
+    rt_remove(ntohl(entry->stIpPrefix.s_addr),
               entry->uiPrefixLen);
     pthread_rwlock_unlock(&rwlock);
 
@@ -123,7 +123,7 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
 
     pthread_rwlock_rdlock(&rwlock);
     pthread_mutex_lock(&mutex);
-    while ((index = rt_iterate(routing_table, index)) != -1) {
+    while ((index = rt_iterate(index)) != -1) {
         TRtEntry *rt_entry = table[index];
         
         // retrive the 'real' next hop for the route entry, and find its outbound interface
@@ -163,7 +163,7 @@ void print_all_routes(FILE *f) {
     int index = 0;
     pthread_rwlock_rdlock(&rwlock);
     pthread_mutex_lock(&mutex);
-    while ((index = rt_iterate(routing_table, index)) != -1) {
+    while ((index = rt_iterate(index)) != -1) {
         TRtEntry *entry = table[index];
         fprintf(f, "[Current Route] %s/%d ", inet_ntoa(entry->stIpPrefix), entry->uiPrefixLen);
         fprintf(f, "via %s metric %d\n", inet_ntoa(entry->stNexthop), entry->uiMetric);
