@@ -14,9 +14,11 @@ static TRtEntry *table[MAX_TABLE_SIZE];
 static int table_size = 1;
 
 static pthread_rwlock_t rwlock;
+static pthread_mutex_t mutex;
 
 void init_route() { 
     pthread_rwlock_init(&rwlock, NULL);
+    pthread_mutex_init(&mutex, NULL);
     routing_table = rt_init(); 
 }
 
@@ -141,7 +143,7 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
         // calculate the actual network ip & prefix
         rip_entry[size].stPrefixLen.s_addr = htonl(PREFIX_DEC2BIN(rt_entry->uiPrefixLen));
         rip_entry[size].stAddr.s_addr = rt_entry->stIpPrefix.s_addr & rip_entry[size].stPrefixLen.s_addr;
-        
+
         if (is_local_address(rt_entry->stNexthop)) {
             rip_entry[size].stNexthop.s_addr = 0; // according to RFC, means 'self'
         } else {
@@ -158,10 +160,12 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
 void print_all_routes(FILE *f) {
     int index = 0;
     pthread_rwlock_rdlock(&rwlock);
+    pthread_mutex_lock(&mutex);
     while ((index = rt_iterate(routing_table, index)) != -1) {
         TRtEntry *entry = table[index];
         fprintf(f, "[Current Route] %s/%d ", inet_ntoa(entry->stIpPrefix), entry->uiPrefixLen);
         fprintf(f, "via %s metric %d\n", inet_ntoa(entry->stNexthop), entry->uiMetric);
     }
+    pthread_mutex_unlock(&mutex);
     pthread_rwlock_unlock(&rwlock);
 }
