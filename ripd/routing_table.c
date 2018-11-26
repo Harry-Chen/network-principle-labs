@@ -13,20 +13,23 @@ static int CMD_DEL = 25;
 static TRtEntry *table[MAX_TABLE_SIZE];
 static int table_size = 1;
 
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t rwlock;
 
-void init_route() { routing_table = rt_init(); }
+void init_route() { 
+    pthread_rwlock_init(&rwlock, NULL);
+    routing_table = rt_init(); 
+}
 
 void insert_route_local(TRtEntry *entry) {
     TRtEntry *item = (TRtEntry *)malloc(sizeof(TRtEntry));
     memcpy(item, entry, sizeof(TRtEntry));
     item->stIpPrefix.s_addr = htonl(ntohl(item->stIpPrefix.s_addr) & PREFIX_DEC2BIN(item->uiPrefixLen));
 
-    pthread_mutex_lock(&mutex);
+    pthread_rwlock_wrlock(&rwlock);
     table[table_size] = item;
     rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen, table_size);
     table_size++;
-    pthread_mutex_unlock(&mutex);
+    pthread_rwlock_unlock(&rwlock);
 
 }
 
@@ -78,36 +81,36 @@ void insert_route_rip(TRipEntry *entry) {
     assert(local_route != NULL);
     item->uiInterfaceIndex = local_route->uiInterfaceIndex;
 
-    pthread_mutex_lock(&mutex);
+    pthread_rwlock_wrlock(&rwlock);
     table[table_size] = item;
     rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen,
               table_size);
     table_size++;
-    pthread_mutex_unlock(&mutex);
+    pthread_rwlock_unlock(&rwlock);
     
     notify_forwarder(item, CMD_ADD);
 }
 
 TRtEntry *lookup_route_longest(struct in_addr dst_addr) {
-    pthread_mutex_lock(&mutex);
+    pthread_rwlock_rdlock(&rwlock);
     uint32_t rt_index = rt_lookup(routing_table, ntohl(dst_addr.s_addr));
-    pthread_mutex_unlock(&mutex);
+    pthread_rwlock_unlock(&rwlock);
     return rt_index == 0 ? NULL : table[rt_index];
 }
 
 TRtEntry *lookup_route_exact(struct in_addr dst_addr, uint32_t prefix) {
-    pthread_mutex_lock(&mutex);
+    pthread_rwlock_rdlock(&rwlock);
     uint32_t rt_index =
         rt_match(routing_table, ntohl(dst_addr.s_addr), prefix, 1);
-    pthread_mutex_unlock(&mutex);
+    pthread_rwlock_unlock(&rwlock);
     return rt_index == 0 ? NULL : table[rt_index];
 }
 
 void delete_route_rip(TRtEntry *entry) {
-    pthread_mutex_lock(&mutex);
+    pthread_rwlock_wrlock(&rwlock);
     rt_remove(routing_table, ntohl(entry->stIpPrefix.s_addr),
               entry->uiPrefixLen);
-    pthread_mutex_unlock(&mutex);
+    pthread_rwlock_unlock(&rwlock);
 
     notify_forwarder(entry, CMD_DEL);
 }
@@ -116,7 +119,7 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
     int size = 0;
     int index = 0;
 
-    pthread_mutex_lock(&mutex);
+    pthread_rwlock_rdlock(&rwlock);
     while ((index = rt_iterate(routing_table, index)) != -1) {
         TRtEntry *rt_entry = table[index];
         
@@ -138,18 +141,18 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
         rip_entry[size].uiMetric = htonl(rt_entry->uiMetric);
         ++size;
     }
-    pthread_mutex_unlock(&mutex);
+    pthread_rwlock_unlock(&rwlock);
 
     return size;
 }
 
 void print_all_routes(FILE *f) {
     int index = 0;
-    pthread_mutex_lock(&mutex);
+    pthread_rwlock_rdlock(&rwlock);
     while ((index = rt_iterate(routing_table, index)) != -1) {
         TRtEntry *entry = table[index];
         fprintf(f, "[Current Route] %s/%d ", inet_ntoa(entry->stIpPrefix), entry->uiPrefixLen);
         fprintf(f, "via %s metric %d\n", inet_ntoa(entry->stNexthop), entry->uiMetric);
     }
-    pthread_mutex_unlock(&mutex);
+    pthread_rwlock_unlock(&rwlock);
 }
