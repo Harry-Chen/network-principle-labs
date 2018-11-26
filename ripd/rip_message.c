@@ -228,15 +228,21 @@ void *receive_and_handle_rip_messages(void *args) {
     }
 
     // join multicast groups
-    struct ip_mreq mreq;
+    struct ip_mreq_source mreq;
     mreq.imr_multiaddr.s_addr = inet_addr(RIP_GROUP);
     
     for (int i = 0; i < MAX_IF; ++i) {
         if_info_t *iface = get_interface_info(i);
         if (iface->name[0] == '\0' || !iface->multicast) continue; // empty interface or cannot multicast
         mreq.imr_interface = iface->ip;
-        if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+        mreq.imr_sourceaddr = iface->ip;
+        // ip_mreq has just two members of ip_mreq_source
+        if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq)) < 0) {
             fprintf(stderr, "Join multicast group failed: %s\n", strerror(errno));
+            return NULL;
+        }
+        if (setsockopt(fd, IPPROTO_IP, IP_BLOCK_SOURCE, &mreq, sizeof(mreq)) < 0) {
+            fprintf(stderr, "Block multicast from local interface failed: %s\n", strerror(errno));
             return NULL;
         }
     }
