@@ -16,10 +16,9 @@ void init_route() { routing_table = rt_init(); }
 void insert_route_local(TRtEntry *entry) {
     TRtEntry *item = (TRtEntry *)malloc(sizeof(TRtEntry));
     memcpy(item, entry, sizeof(TRtEntry));
-    uint32_t ip_h = ntohl(item->stIpPrefix.s_addr);
-    ip_h &= PREFIX_DEC2BIN(item->uiPrefixLen);;
+    item->stIpPrefix.s_addr = htonl(ntohl(item->stIpPrefix.s_addr) & PREFIX_DEC2BIN(item->uiPrefixLen));
     table[table_size] = item;
-    rt_insert(routing_table, ip_h, item->uiPrefixLen, table_size);
+    rt_insert(routing_table, item->stIpPrefix.s_addr, item->uiPrefixLen, table_size);
     table_size++;
 }
 
