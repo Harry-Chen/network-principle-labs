@@ -149,36 +149,37 @@ static void handle_rip_request(struct in_addr src) {
 static void handle_rip_response(TRipEntry *entires, uint32_t size) {
     for (int i = 0; i < size; ++i) {
         TRipEntry *entry = &entires[i];
-    
+        uint32_t new_metric = ntohl(entry->uiMetric);
         uint32_t prefix_len = PREFIX_BIN2DEC(ntohl(entry->stPrefixLen.s_addr));
 
         // inet_ntoa use one same memory for every call!!!!
         printf("[Handle Response: %d] Received route: %s/%d ", i, inet_ntoa(entry->stAddr), prefix_len);
-        printf("via %s metric %d\n", inet_ntoa(entry->stNexthop), entry->uiMetric);
+        printf("via %s metric %d\n", inet_ntoa(entry->stNexthop), new_metric);
 
         TRtEntry *old = lookup_route_exact(entry->stAddr, prefix_len);
 
         if (old == NULL) { // new item
-            if (++entry->uiMetric < RIP_INFINITY) {
+            if (new_metric + 1 < RIP_INFINITY) {
                 insert_route_rip(entry);
                 printf("[Handle Response: %d] No existed route to the same network found, inserted to table.\n", i);
             }
-        } else if (entry->stNexthop.s_addr == old->stNexthop.s_addr) { // updating item
-            printf("[Handle Response: %d] Found route to the same network and same nexthop, removing the old one.\n", i);
-            delete_route_rip(old); // remove the existed item
-            if (++entry->uiMetric < RIP_INFINITY) { // remove existed item
-                printf("[Handle Response: %d] Inserting the new route", i);
-                insert_route_rip(entry);
-            }
-        } else { // replacing item
-            printf("[Handle Response: %d] Found route to the same network but different nexthop.\n", i);
-            if (entry->uiMetric + 1 >= RIP_INFINITY) { // remove existed item
-                delete_route_rip(old);
-            } else if (entry->uiMetric < old->uiMetric) { // replace with the new one
-                printf("[Handle Response: %d] New item has smaller metric, replacing the old one.\n", i);
-                delete_route_rip(old);
-                entry->uiMetric++;
-                insert_route_rip(entry);
+        } else { // existing item
+            if (entry->stNexthop.s_addr == old->stNexthop.s_addr) { // updating item
+                printf("[Handle Response: %d] Found route to the same network and same nexthop, removing the old one.\n", i);
+                delete_route_rip(old); // remove the existed item
+                if (new_metric + 1 < RIP_INFINITY) {
+                    printf("[Handle Response: %d] Inserting the new route", i);
+                    insert_route_rip(entry);
+                }
+            } else { // replacing item
+                printf("[Handle Response: %d] Found route to the same network but different nexthop.\n", i);
+                if (new_metric + 1 >= RIP_INFINITY) { // remove existed item
+                    delete_route_rip(old);
+                } else if (new_metric < old->uiMetric) { // replace with the new one
+                    printf("[Handle Response: %d] New item has smaller metric, replacing the old one.\n", i);
+                    delete_route_rip(old);
+                    insert_route_rip(entry);
+                }
             }
         }
     }

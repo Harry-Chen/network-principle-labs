@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "routing_table.h"
 #include "../routing_table/rt.h"
 
@@ -71,9 +73,10 @@ void insert_route_rip(TRipEntry *entry) {
     TRtEntry *item = (TRtEntry *)malloc(sizeof(TRtEntry));
     item->stIpPrefix = entry->stAddr;
     item->uiPrefixLen = PREFIX_BIN2DEC(ntohl(entry->stPrefixLen.s_addr));
-    item->uiMetric = entry->uiMetric;
+    item->uiMetric = ntohl(entry->uiMetric) + 1;
     item->stNexthop = entry->stNexthop;
     TRtEntry *local_route = lookup_route_longest(item->stNexthop);
+    assert(local_route != NULL);
     item->uiInterfaceIndex = local_route->uiInterfaceIndex;
     table[table_size] = item;
     rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen,
