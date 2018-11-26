@@ -18,16 +18,8 @@ static int establish_rip_fd(in_addr_t source, in_addr_t dest, uint8_t do_connect
         return -1;
     }
 
-    struct sockaddr_in local, remote;
-    local.sin_family = AF_INET;
-    local.sin_port = htons(RIP_PORT);
-    local.sin_addr.s_addr = source;
-    if (bind(fd, (struct sockaddr *)&local, sizeof(local)) < 0) {
-        fprintf(stderr, "Bind to local RIP port failed: %s\n", strerror(errno));
-        return -1;
-    }
-
-    if (do_connect) {
+    if (do_connect) { // send packets
+        struct sockaddr_in remote;
         remote.sin_family = AF_INET;
         remote.sin_port = htons(RIP_PORT);
         remote.sin_addr.s_addr = dest;
@@ -35,6 +27,35 @@ static int establish_rip_fd(in_addr_t source, in_addr_t dest, uint8_t do_connect
             fprintf(stderr, "Connect to remote RIP port failed: %s\n", strerror(errno));
             return -1;
         }
+    } else {
+        // join multicast groups to listen
+        struct ip_mreq_source mreq;
+        mreq.imr_multiaddr.s_addr = inet_addr(RIP_GROUP);
+        
+        for (int i = 0; i < MAX_IF; ++i) {
+            if_info_t *iface = get_interface_info(i);
+            if (iface->name[0] == '\0' || !iface->multicast) continue; // empty interface or cannot multicast
+            mreq.imr_interface = iface->ip;
+            mreq.imr_sourceaddr = iface->ip;
+            // ip_mreq has just two members of ip_mreq_source
+            if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq)) < 0) {
+                fprintf(stderr, "Join multicast group failed: %s\n", strerror(errno));
+                return -1;
+            }
+            if (setsockopt(fd, IPPROTO_IP, IP_BLOCK_SOURCE, &mreq, sizeof(mreq)) < 0) {
+                fprintf(stderr, "Block multicast from local interface failed: %s\n", strerror(errno));
+                return -1;
+            }
+        }
+    }
+
+    struct sockaddr_in local;
+    local.sin_family = AF_INET;
+    local.sin_port = htons(RIP_PORT);
+    local.sin_addr.s_addr = source;
+    if (bind(fd, (struct sockaddr *)&local, sizeof(local)) < 0) {
+        fprintf(stderr, "Bind to local RIP port failed: %s\n", strerror(errno));
+        return -1;
     }
 
     return fd;
@@ -134,8 +155,9 @@ static void handle_rip_request(struct in_addr src) {
     int fd = establish_rip_fd(iface->ip.s_addr, src.s_addr, 1);
     if (fd < 0) return;
 
-    fprintf(stderr, "[Response to Request] Send via interface %s from %s to %s, size %d...", iface->name, inet_ntoa(iface->ip),
-        inet_ntoa(src), length);
+    printf("[Response to Request] Send via interface %s from %s", iface->name, inet_ntoa(iface->ip));
+    printf("to %s, size %d...", inet_ntoa(src), length);
+
     if (send(fd, &packet_response, length, 0) < 0) {
         fprintf(stderr, "Failed: %s\n", strerror(errno));
     } else {
@@ -225,26 +247,6 @@ void *receive_and_handle_rip_messages(void *args) {
     if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &(int){ 0 }, sizeof(int)) < 0) {
         fprintf(stderr, "Set MULTICAST_LOOP failed: %s\n", strerror(errno));
         return NULL;
-    }
-
-    // join multicast groups
-    struct ip_mreq_source mreq;
-    mreq.imr_multiaddr.s_addr = inet_addr(RIP_GROUP);
-    
-    for (int i = 0; i < MAX_IF; ++i) {
-        if_info_t *iface = get_interface_info(i);
-        if (iface->name[0] == '\0' || !iface->multicast) continue; // empty interface or cannot multicast
-        mreq.imr_interface = iface->ip;
-        mreq.imr_sourceaddr = iface->ip;
-        // ip_mreq has just two members of ip_mreq_source
-        if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(struct ip_mreq)) < 0) {
-            fprintf(stderr, "Join multicast group failed: %s\n", strerror(errno));
-            return NULL;
-        }
-        if (setsockopt(fd, IPPROTO_IP, IP_BLOCK_SOURCE, &mreq, sizeof(mreq)) < 0) {
-            fprintf(stderr, "Block multicast from local interface failed: %s\n", strerror(errno));
-            return NULL;
-        }
     }
 
     char buffer[1500];
