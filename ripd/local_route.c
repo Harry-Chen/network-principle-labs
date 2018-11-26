@@ -41,7 +41,7 @@ void init_local_interfaces() {
             TRtEntry local_route_entry = {
                 .stIpPrefix = *addr,
                 .uiPrefixLen = prefix_len,
-                .stNexthop = NEXTHOP_ONLINK,
+                .stNexthop = *addr,
                 .uiMetric = 0,
                 .uiInterfaceIndex = if_index
             };
