@@ -192,7 +192,7 @@ static void handle_rip_response(TRipEntry *entires, uint32_t size, struct in_add
             if (entry->stNexthop.s_addr == old->stNexthop.s_addr) { // updating item
                 printf("[Handle Response: %d] Found route to the same network and same nexthop, removing the old one.\n", i);
                 delete_route_rip(old); // remove the existed item
-                // print_all_routes(stderr);
+                print_all_routes(stderr);
                 if (new_metric + 1 < RIP_INFINITY) {
                     printf("[Handle Response: %d] Inserting the new route", i);
                     insert_route_rip(entry);

@@ -33,7 +33,7 @@ void rt_insert(uint32_t ip, uint32_t prefix, uint32_t index) {
     table->push_back({ip, prefix, index});
     in_addr addr;
     addr.s_addr = htonl(ip);
-    printf("Insert: %s/%d index %d\n", inet_ntoa(addr), prefix, index);
+    fprintf(stderr, "[Table] Insert: %s/%d index %d\n", inet_ntoa(addr), prefix, index);
     std::sort(table->begin(), table->end(), std::greater<>());
 }
 
@@ -42,7 +42,7 @@ void rt_remove(uint32_t ip, uint32_t prefix) {
     table->erase(std::remove(table->begin(), table->end(), route), table->end());
     in_addr addr;
     addr.s_addr = htonl(ip);
-    printf("Remove: %s/%d\n", inet_ntoa(addr), prefix);
+    fprintf(stderr, "[Table] Remove: %s/%d\n", inet_ntoa(addr), prefix);
     std::sort(table->begin(), table->end(), std::greater<>());
 }
 
