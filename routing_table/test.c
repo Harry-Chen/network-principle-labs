@@ -36,6 +36,9 @@ int main() {
     result = rt_match(table, IP("100.64.0.0"), 24, 1);
     assert(result == 2);
 
+    result = rt_match(table, IP("100.64.0.100"), 24, 1);
+    assert(result == 2);
+
     result = rt_match(table, IP("100.64.0.0"), 10, 1);
     assert(result == 4);
 

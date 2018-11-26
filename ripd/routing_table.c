@@ -14,6 +14,8 @@ void init_route() { routing_table = rt_init(); }
 void insert_route_local(TRtEntry *entry) {
     TRtEntry *item = (TRtEntry *)malloc(sizeof(TRtEntry));
     memcpy(item, entry, sizeof(TRtEntry));
+    uint32_t ip_h = ntohl(item->stIpPrefix.s_addr);
+    ip_h &= PREFIX_DEC2BIN(item->uiPrefixLen);;
     table[table_size] = item;
     rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen,
               table_size);
@@ -68,7 +70,7 @@ static int notify_forwarder(TRtEntry *entry, uint32_t cmd) {
 void insert_route_rip(TRipEntry *entry) {
     TRtEntry *item = (TRtEntry *)malloc(sizeof(TRtEntry));
     item->stIpPrefix = entry->stAddr;
-    item->uiPrefixLen = 32 - __builtin_ctz(ntohl(entry->stPrefixLen.s_addr));
+    item->uiPrefixLen = PREFIX_BIN2DEC(ntohl(entry->stPrefixLen.s_addr));
     item->uiMetric = entry->uiMetric;
     item->stNexthop = entry->stNexthop;
     TRtEntry *local_route = lookup_route_longest(item->stNexthop);
@@ -104,10 +106,9 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr iface_addr) {
         TRtEntry *rt_entry = table[index];
         rip_entry[size].usFamily = htons(AF_INET);
         rip_entry[size].usTag = 0;
-        rip_entry[size].stAddr = rt_entry->stIpPrefix;
-        rip_entry[size].stPrefixLen.s_addr =
-            htonl(((~0) >> (32 - rt_entry->uiPrefixLen))
-                  << (32 - rt_entry->uiPrefixLen));
+        // calculate the actual network ip & prefix
+        rip_entry[size].stPrefixLen.s_addr = htonl(PREFIX_DEC2BIN(rt_entry->uiPrefixLen));
+        rip_entry[size].stAddr.s_addr = rt_entry->stIpPrefix.s_addr & rip_entry[size].stPrefixLen.s_addr;
         rip_entry[size].stNexthop = iface_addr;
         rip_entry[size].uiMetric = htonl(rt_entry->uiMetric);
         ++size;

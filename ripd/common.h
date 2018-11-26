@@ -26,6 +26,7 @@
 #define ROUTE_MAX_ENTRY 256
 #define RIP_GROUP		"224.0.0.9"
 #define RIP_HEADER_LEN  4
+#define RIP_UPDATE_INTERVAL 5
 
 #define RIP_CHECK_OK    1
 #define RIP_CHECK_FAIL  0
@@ -72,6 +73,9 @@ typedef struct SockRoute
 	// for compatibility purpose
 	char cIfName[10];
 } TSockRoute;
+
+#define PREFIX_BIN2DEC(bin) (32 - __builtin_ctz((bin)))
+#define PREFIX_DEC2BIN(hex) (((~0) >> (32 - (hex))) << (32 - (hex)))
 
 #endif
 

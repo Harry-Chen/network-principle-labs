@@ -32,8 +32,8 @@ int main(int argc,char* argv[]) {
     }
 
 	// start thread to send updating messages every 30 seconds
-	pthread_t tid_update, tid_recv_response, tid_recv_multicast;
-    int pd_update, pd_recv_response, pd_recv_multicast;
+	pthread_t tid_update, tid_recv_response;
+    int pd_update, pd_recv_response;
     if ((pd_update = pthread_create(&tid_update, NULL, send_update_messages, NULL)) < 0) {
         fprintf(stderr, "Error creating thread: %s\n", strerror(errno));
         exit(EXIT_FAILURE);

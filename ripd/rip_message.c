@@ -100,7 +100,7 @@ static void send_all_routes(in_addr_t dest) {
 void *send_update_messages(void *args) {
 	while (!should_exit) {
 		send_all_routes(inet_addr(RIP_GROUP));
-		sleep(5);
+		sleep(RIP_UPDATE_INTERVAL);
 	}
     return NULL;
 }
@@ -150,10 +150,10 @@ static void handle_rip_response(TRipEntry *entires, uint32_t size) {
     for (int i = 0; i < size; ++i) {
         TRipEntry *entry = &entires[i];
     
-        uint32_t prefix_len = 32 - __builtin_ctz(ntohl(entry->stPrefixLen.s_addr));
+        uint32_t prefix_len = PREFIX_BIN2DEC(ntohl(entry->stPrefixLen.s_addr));
 
         // inet_ntoa use one same memory for every call!!!!
-        printf("[Handle Response: %d] Received route: %s/%d", i, inet_ntoa(entry->stAddr), prefix_len);
+        printf("[Handle Response: %d] Received route: %s/%d ", i, inet_ntoa(entry->stAddr), prefix_len);
         printf("via %s metric %d\n", inet_ntoa(entry->stNexthop), entry->uiMetric);
 
         TRtEntry *old = lookup_route_exact(entry->stAddr, prefix_len);

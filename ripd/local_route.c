@@ -33,9 +33,8 @@ void init_local_interfaces() {
             printf("Found interface %d: %s", if_index, ifa->ifa_name);
             struct in_addr *addr = &((struct sockaddr_in *) ifa->ifa_addr)->sin_addr;
             struct in_addr *mask = &((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr;
-            uint32_t prefix = ntohl(mask->s_addr);
             inet_ntop(AF_INET, &(addr->s_addr), ip_addr, INET_ADDRSTRLEN);
-            uint32_t prefix_len = 32 - __builtin_ctz(prefix);
+            uint32_t prefix_len = PREFIX_BIN2DEC(ntohl(mask->s_addr));
             printf(" with IPv4 address: %s/%d\n", ip_addr, prefix_len);
 
             // insert link-scope routes
