@@ -126,8 +126,12 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
         // retrive the 'real' next hop for the route entry, and find its outbound interface
         TRtEntry *local_route = lookup_route_longest(rt_entry->stNexthop);
         assert(local_route != NULL);
+
         // if it is just the interfaces we are sending multicast from
-        if (get_interface_info(local_route->uiInterfaceIndex)->ip.s_addr == nexthop.s_addr) {
+        // either we learn the route from this interface, or it is the on-link route
+        uint8_t nexthop_same_interface = get_interface_info(local_route->uiInterfaceIndex)->ip.s_addr == nexthop.s_addr;
+        uint8_t onlink_route = rt_entry->stNexthop.s_addr != nexthop.s_addr;
+        if (nexthop_same_interface && !onlink_route) {
             // horizontal split: do not send the route back
             continue;
         }
