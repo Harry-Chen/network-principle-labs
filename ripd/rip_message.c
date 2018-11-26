@@ -124,6 +124,7 @@ static void send_all_routes(in_addr_t dest) {
 void *send_update_messages(void *args) {
 	while (!should_exit) {
 		send_all_routes(inet_addr(RIP_GROUP));
+        print_all_routes(stderr);
 		sleep(RIP_UPDATE_INTERVAL);
 	}
     return NULL;

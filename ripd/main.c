@@ -38,7 +38,7 @@ int main(int argc,char* argv[]) {
         fprintf(stderr, "Error creating thread: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     } else {
-        printf("Thread started to send rip routing table every 30 seconds.\n");
+        printf("Thread started to send rip routing table every %d seconds.\n", RIP_UPDATE_INTERVAL);
     }
 
 	// send initial reuqest to get rip table from other hosts
