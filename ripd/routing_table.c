@@ -122,7 +122,7 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr iface_addr) {
 
 void print_all_routes(FILE *f) {
     int index = 0;
-    while ((index = rt_iterate(table, index)) != -1) {
+    while ((index = rt_iterate(routing_table, index)) != -1) {
         TRtEntry *entry = table[index];
         fprintf(f, "[Current Route] %s/%d ", inet_ntoa(entry->stIpPrefix), entry->uiPrefixLen);
         fprintf(f, "via %s metric %d\n", inet_ntoa(entry->stNexthop), entry->uiMetric);
