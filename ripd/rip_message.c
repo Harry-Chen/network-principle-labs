@@ -85,8 +85,10 @@ static void fill_and_send_multicast_packet(int mode) {
         int fd = establish_rip_fd(iface->ip.s_addr, inet_addr(RIP_GROUP), 1);
         if (fd < 0) continue;
 
-        payload_size = fill_rip_packet(packet->RipEntries, iface->ip);
-        length = RIP_HEADER_LEN +  sizeof(TRipEntry) * payload_size;
+        if (mode == UPDATE) {
+            payload_size = fill_rip_packet(packet->RipEntries, iface->ip);
+            length = RIP_HEADER_LEN +  sizeof(TRipEntry) * payload_size;
+        }
 
         fprintf(stderr, "[Send %s] Multicasting via interface %s with IP %s, size %d...", mode ? "Request" : "Update", iface->name, inet_ntoa(iface->ip), length);
         if (send(fd, packet, length, 0) < 0) {
