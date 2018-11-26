@@ -122,6 +122,7 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
     int index = 0;
 
     pthread_rwlock_rdlock(&rwlock);
+    pthread_mutex_lock(&mutex);
     while ((index = rt_iterate(routing_table, index)) != -1) {
         TRtEntry *rt_entry = table[index];
         
@@ -152,6 +153,7 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
         rip_entry[size].uiMetric = htonl(rt_entry->uiMetric);
         ++size;
     }
+    pthread_mutex_unlock(&mutex);
     pthread_rwlock_unlock(&rwlock);
 
     return size;
