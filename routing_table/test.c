@@ -67,6 +67,23 @@ int main() {
 
     rt_cleanup(table);
 
+    // second test
+    rt_init(table);
+    rt_insert(table, IP("166.111.17.64"), 26, 1);
+    rt_insert(table, IP("10.2.0.0"), 16, 1);
+    rt_insert(table, IP("172.17.0.0"), 16, 1);
+    rt_insert(table, IP("172.18.0.0"), 16, 1);
+    rt_insert(table, IP("166.111.17.74"), 26, 1);
+    rt_insert(table, IP("10.3.0.0"), 24, 1);
+    rt_insert(table, IP("10.57.0.0"), 16, 1);
+    rt_insert(table, IP("10.240.1.4"), 30, 1);
+    rt_insert(table, IP("10.240.1.8"), 30, 1);
+    rt_remove(table, IP("10.3.0.0"), 24);
+    result = 0;
+    while ((result = rt_iterate(table, result)) != -1) {}
+    assert(result == -1);
+
+
     printf("Routing table test passed!\n");
 
     return 0;

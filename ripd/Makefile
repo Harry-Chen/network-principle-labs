@@ -6,7 +6,7 @@ OBJS    := $(addprefix $(OBJ)/,$(SRCS:.c=.o))
 EXE    := ripd
 
 CC      := ${CROSS_COMPILE}gcc
-CFLAGS  := -Wall -O3
+CFLAGS  := -Wall -O2
 
 CFLAGS_RELEASE := -Wl,--strip-all -static-libstdc++ -static-libgcc -static
 CFLAGS_DEBUG   := -g

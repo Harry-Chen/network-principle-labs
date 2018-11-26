@@ -58,3 +58,12 @@ void init_local_interfaces() {
 if_info_t *get_interface_info(uint8_t index) {
     return &if_info[index];
 }
+
+uint8_t is_local_address(struct in_addr addr) {
+    for (int i = 0; i < MAX_IF; ++i) {
+        if_info_t *iface = get_interface_info(i);
+        if (iface->name[0] == '\0') continue; // empty interface
+        if (iface->ip.s_addr == addr.s_addr) return 1;
+    }
+    return 0;
+}

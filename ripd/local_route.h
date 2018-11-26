@@ -17,4 +17,6 @@ void init_local_interfaces();
 
 if_info_t *get_interface_info(uint8_t index);
 
+uint8_t is_local_address(struct in_addr addr);
+
 #endif
