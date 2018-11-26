@@ -85,11 +85,6 @@ static void fill_and_send_multicast_packet(int mode) {
         int fd = establish_rip_fd(iface->ip.s_addr, inet_addr(RIP_GROUP), 1);
         if (fd < 0) continue;
 
-        if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, &iface->ip, sizeof(struct in_addr)) < 0) {
-            fprintf(stderr, "Set IP_MULTICAST_IF failed for %s with IP %s: %s\n", iface->name, inet_ntoa(iface->ip), strerror(errno));
-            continue;
-        }
-
         payload_size = fill_rip_packet(packet->RipEntries, iface->ip);
         length = RIP_HEADER_LEN +  sizeof(TRipEntry) * payload_size;
 
@@ -195,7 +190,7 @@ static void handle_rip_response(TRipEntry *entires, uint32_t size, struct in_add
             if (entry->stNexthop.s_addr == old->stNexthop.s_addr) { // updating item
                 printf("[Handle Response: %d] Found route to the same network and same nexthop, removing the old one.\n", i);
                 delete_route_rip(old); // remove the existed item
-                print_all_routes(stderr);
+                // print_all_routes(stderr);
                 if (new_metric + 1 < RIP_INFINITY) {
                     printf("[Handle Response: %d] Inserting the new route", i);
                     insert_route_rip(entry);
