@@ -75,8 +75,6 @@ static void fill_and_send_multicast_packet(int mode) {
         struct in_addr placeholder = {
             .s_addr = 0
         };
-        payload_size = fill_rip_packet(packet->RipEntries, placeholder);
-        length += sizeof(TRipEntry) * payload_size;
     } else if (mode == REQUEST) {
         packet = &packet_request;
         length += sizeof(TRipEntry);
@@ -93,10 +91,10 @@ static void fill_and_send_multicast_packet(int mode) {
             fprintf(stderr, "Set IP_MULTICAST_IF failed for %s with IP %s: %s\n", iface->name, inet_ntoa(iface->ip), strerror(errno));
             continue;
         }
-        // nexthop should be ip of the interface that is sending packet from
-        for (int j = 0; j < payload_size; ++j) {
-            packet->RipEntries[j].stNexthop = iface->ip;
-        }
+
+        payload_size = fill_rip_packet(packet->RipEntries, iface->ip);
+        length = RIP_HEADER_LEN +  sizeof(TRipEntry) * payload_size;
+
         fprintf(stderr, "[Send %s] Multicasting via interface %s with IP %s, size %d...", mode ? "Request" : "Update", iface->name, inet_ntoa(iface->ip), length);
         if (send(fd, packet, length, 0) < 0) {
             fprintf(stderr, "Failed: %s\n", strerror(errno));
@@ -149,6 +147,7 @@ static void handle_rip_request(struct in_addr src) {
     bzero(&packet_response, sizeof(TRipPkt));
     packet_response.ucCommand = RIP_RESPONSE;
     packet_response.ucVersion = RIP_VERSION;
+    
     // find the address to fill in nexthop field of response
     TRtEntry *entry =  lookup_route_longest(src);
     if_info_t *iface = get_interface_info(entry->uiInterfaceIndex);

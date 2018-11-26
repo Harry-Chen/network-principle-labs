@@ -2,6 +2,7 @@
 #include <pthread.h>
 
 #include "routing_table.h"
+#include "local_route.h"
 #include "../routing_table/rt.h"
 
 static routing_table_t routing_table;
@@ -72,6 +73,7 @@ void insert_route_rip(TRipEntry *entry) {
     item->uiPrefixLen = PREFIX_BIN2DEC(ntohl(entry->stPrefixLen.s_addr));
     item->uiMetric = ntohl(entry->uiMetric) + 1;
     item->stNexthop = entry->stNexthop;
+
     TRtEntry *local_route = lookup_route_longest(item->stNexthop);
     assert(local_route != NULL);
     item->uiInterfaceIndex = local_route->uiInterfaceIndex;
@@ -110,19 +112,29 @@ void delete_route_rip(TRtEntry *entry) {
     notify_forwarder(entry, CMD_DEL);
 }
 
-int fill_rip_packet(TRipEntry *rip_entry, struct in_addr iface_addr) {
+int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
     int size = 0;
     int index = 0;
 
     pthread_mutex_lock(&mutex);
     while ((index = rt_iterate(routing_table, index)) != -1) {
         TRtEntry *rt_entry = table[index];
+        
+        // retrive the 'real' next hop for the route entry, and find its outbound interface
+        TRtEntry *local_route = lookup_route_longest(rt_entry->stNexthop);
+        assert(local_route != NULL);
+        // if it is just the interfaces we are sending multicast from
+        if (get_interface_info(local_route->uiInterfaceIndex)->ip.s_addr == nexthop.s_addr) {
+            // horizontal split: do not send the route back
+            continue;
+        }
+
         rip_entry[size].usFamily = htons(AF_INET);
         rip_entry[size].usTag = 0;
         // calculate the actual network ip & prefix
         rip_entry[size].stPrefixLen.s_addr = htonl(PREFIX_DEC2BIN(rt_entry->uiPrefixLen));
         rip_entry[size].stAddr.s_addr = rt_entry->stIpPrefix.s_addr & rip_entry[size].stPrefixLen.s_addr;
-        rip_entry[size].stNexthop = iface_addr;
+        rip_entry[size].stNexthop = nexthop;
         rip_entry[size].uiMetric = htonl(rt_entry->uiMetric);
         ++size;
     }
