@@ -18,8 +18,9 @@ void insert_route_local(TRtEntry *entry) {
     memcpy(item, entry, sizeof(TRtEntry));
     item->stIpPrefix.s_addr = htonl(ntohl(item->stIpPrefix.s_addr) & PREFIX_DEC2BIN(item->uiPrefixLen));
     table[table_size] = item;
-    rt_insert(routing_table, item->stIpPrefix.s_addr, item->uiPrefixLen, table_size);
+    rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen, table_size);
     table_size++;
+    print_all_routes(stderr);
 }
 
 static void notify_forwarder(TRtEntry *entry, uint32_t cmd) {
@@ -72,6 +73,7 @@ void insert_route_rip(TRipEntry *entry) {
     rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen,
               table_size);
     table_size++;
+    print_all_routes(stderr);
     notify_forwarder(item, CMD_ADD);
 }
 
@@ -89,6 +91,7 @@ TRtEntry *lookup_route_exact(struct in_addr dst_addr, uint32_t prefix) {
 void delete_route_rip(TRtEntry *entry) {
     rt_remove(routing_table, ntohl(entry->stIpPrefix.s_addr),
               entry->uiPrefixLen);
+    print_all_routes(stderr);
     notify_forwarder(entry, CMD_DEL);
 }
 

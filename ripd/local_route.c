@@ -35,7 +35,7 @@ void init_local_interfaces() {
             struct in_addr *mask = &((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr;
             inet_ntop(AF_INET, &(addr->s_addr), ip_addr, INET_ADDRSTRLEN);
             uint32_t prefix_len = PREFIX_BIN2DEC(ntohl(mask->s_addr));
-            printf(" with address: %s/%d inserted to table.\n", ip_addr, prefix_len);
+            printf(" with address: %s/%d\n", ip_addr, prefix_len);
 
             // insert link-scope routes
             TRtEntry local_route_entry = {
