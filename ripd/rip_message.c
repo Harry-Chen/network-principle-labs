@@ -18,16 +18,7 @@ static int establish_rip_fd(in_addr_t source, in_addr_t dest, uint8_t do_connect
         return -1;
     }
 
-    if (do_connect) { // send packets
-        struct sockaddr_in remote;
-        remote.sin_family = AF_INET;
-        remote.sin_port = htons(RIP_PORT);
-        remote.sin_addr.s_addr = dest;
-        if (connect(fd, (struct sockaddr *)&remote, sizeof(remote)) < 0) {
-            fprintf(stderr, "Connect to remote RIP port failed: %s\n", strerror(errno));
-            return -1;
-        }
-    } else {
+    if (!do_connect) {
         // join multicast groups to listen
         struct ip_mreq_source mreq;
         mreq.imr_multiaddr.s_addr = inet_addr(RIP_GROUP);
@@ -53,9 +44,21 @@ static int establish_rip_fd(in_addr_t source, in_addr_t dest, uint8_t do_connect
     local.sin_family = AF_INET;
     local.sin_port = htons(RIP_PORT);
     local.sin_addr.s_addr = source;
+
     if (bind(fd, (struct sockaddr *)&local, sizeof(local)) < 0) {
         fprintf(stderr, "Bind to local RIP port failed: %s\n", strerror(errno));
         return -1;
+    }
+
+    if (do_connect) { // connect to remote host
+        struct sockaddr_in remote;
+        remote.sin_family = AF_INET;
+        remote.sin_port = htons(RIP_PORT);
+        remote.sin_addr.s_addr = dest;
+        if (connect(fd, (struct sockaddr *)&remote, sizeof(remote)) < 0) {
+            fprintf(stderr, "Connect to remote RIP port failed: %s\n", strerror(errno));
+            return -1;
+        }
     }
 
     return fd;
