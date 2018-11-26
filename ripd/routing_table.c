@@ -19,15 +19,13 @@ void insert_route_local(TRtEntry *entry) {
     uint32_t ip_h = ntohl(item->stIpPrefix.s_addr);
     ip_h &= PREFIX_DEC2BIN(item->uiPrefixLen);;
     table[table_size] = item;
-    rt_insert(routing_table, ntohl(item->stIpPrefix.s_addr), item->uiPrefixLen,
-              table_size);
+    rt_insert(routing_table, ip_h, item->uiPrefixLen, table_size);
     table_size++;
 }
 
-static int notify_forwarder(TRtEntry *entry, uint32_t cmd) {
+static void notify_forwarder(TRtEntry *entry, uint32_t cmd) {
     
     int sendfd;
-    int sendlen = 0;
 
     struct sockaddr_in dst_addr = {
         .sin_family = AF_INET,
@@ -44,29 +42,22 @@ static int notify_forwarder(TRtEntry *entry, uint32_t cmd) {
 
     if ((sendfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         fprintf(stderr, "[Notify] Error opening TCP socket: %s\n", strerror(errno));
-        return -1;
+        return;
     }
-    int tcpcount = 0;
-    while (tcpcount < 6) {
-        if (connect(sendfd, (struct sockaddr *)&dst_addr, sizeof(dst_addr)) < 0) {
-            tcpcount++;
-        } else {
-            break;
-        }
-        usleep(10000);
+
+    if (connect(sendfd, (struct sockaddr *)&dst_addr, sizeof(dst_addr)) < 0) {
+        fprintf(stderr, "[Notify] Connecting to forwarder failed: %s\n", strerror(errno));
+        return;
     }
-    if (tcpcount < 6) {
-        sendlen = send(sendfd, &route, sizeof(route), 0);
-        if (sendlen < 0) {
-            fprintf(stderr, "[Notify] Sending route item failed: %s\n", strerror(errno));
-            return -1;
-        } else {
-            fprintf(stderr, "[Notify] Successfully sent route item to forwarder\n");
-        }
+
+    if (send(sendfd, &route, sizeof(route), 0) < 0) {
+        fprintf(stderr, "[Notify] Sending route item failed: %s\n", strerror(errno));
+        return;
+    } else {
+        fprintf(stderr, "[Notify] Successfully sent route item to forwarder\n");
     }
 
     close(sendfd);
-    return 0;
 }
 
 void insert_route_rip(TRipEntry *entry) {
