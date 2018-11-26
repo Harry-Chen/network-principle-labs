@@ -27,7 +27,6 @@ void insert_route_local(TRtEntry *entry) {
     table_size++;
     pthread_mutex_unlock(&mutex);
 
-    print_all_routes(stderr);
 }
 
 static void notify_forwarder(TRtEntry *entry, uint32_t cmd) {
@@ -83,8 +82,7 @@ void insert_route_rip(TRipEntry *entry) {
               table_size);
     table_size++;
     pthread_mutex_unlock(&mutex);
-
-    print_all_routes(stderr);
+    
     notify_forwarder(item, CMD_ADD);
 }
 
@@ -108,7 +106,7 @@ void delete_route_rip(TRtEntry *entry) {
     rt_remove(routing_table, ntohl(entry->stIpPrefix.s_addr),
               entry->uiPrefixLen);
     pthread_mutex_unlock(&mutex);
-    print_all_routes(stderr);
+
     notify_forwarder(entry, CMD_DEL);
 }
 

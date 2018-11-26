@@ -47,7 +47,6 @@ void init_local_interfaces() {
             };
             insert_route_local(&local_route_entry);
 
-            print_all_routes(stderr);
 
             strcpy(if_info[if_index].name, ifa->ifa_name);
             if_info[if_index].ip = *addr;
@@ -55,7 +54,7 @@ void init_local_interfaces() {
             if_info[if_index].multicast = (ifa->ifa_flags & IFF_MULTICAST) != 0;
         }
     }
- 
+    print_all_routes(stderr);
     freeifaddrs(ifaddr);
 }
 
