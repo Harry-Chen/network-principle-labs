@@ -221,14 +221,16 @@ static void handle_rip_message(TRipPkt *message, ssize_t length, struct in_addr 
     ssize_t remaining_size = length - RIP_HEADER_LEN - payload_size * sizeof(TRipEntry);
 
     if (version != RIP_VERSION || (command != RIP_REQUEST && command != RIP_RESPONSE) || remaining_size != 0) {
-        fprintf(stderr, "[Multicast Handle] Invalid RIP message received and ignored from %s.\n", inet_ntoa(src));
+        fprintf(stderr, "[Message Handle] Invalid RIP message received and ignored from %s.\n", inet_ntoa(src));
         return;
+    } else {
+        printf("[Message Handle] Message contains %d routes.\n", payload_size);
     }
 
     switch (command) {
         case RIP_REQUEST:
             if (payload_size != 1 || entries->usFamily != 0 || entries->uiMetric != ntohl(16)) {
-                fprintf(stderr, "[Multicast Handle] Received invalid RIP request, will not respond.\n");
+                fprintf(stderr, "[Message Handle] Received invalid RIP request, will not respond.\n");
                 return;
             }
             handle_rip_request(src);
