@@ -30,12 +30,12 @@ void init_local_interfaces() {
             uint32_t if_index = if_nametoindex(ifa->ifa_name);
 
             char ip_addr[INET_ADDRSTRLEN];
-            printf("Found interface %d: %s", if_index, ifa->ifa_name);
+            printf("[Local Route] Interface %d: %s", if_index, ifa->ifa_name);
             struct in_addr *addr = &((struct sockaddr_in *) ifa->ifa_addr)->sin_addr;
             struct in_addr *mask = &((struct sockaddr_in *) ifa->ifa_netmask)->sin_addr;
             inet_ntop(AF_INET, &(addr->s_addr), ip_addr, INET_ADDRSTRLEN);
             uint32_t prefix_len = PREFIX_BIN2DEC(ntohl(mask->s_addr));
-            printf(" with IPv4 address: %s/%d\n", ip_addr, prefix_len);
+            printf(" with address: %s/%d inserted to table.\n", ip_addr, prefix_len);
 
             // insert link-scope routes
             TRtEntry local_route_entry = {
@@ -46,6 +46,8 @@ void init_local_interfaces() {
                 .uiInterfaceIndex = if_index
             };
             insert_route_local(&local_route_entry);
+
+            print_all_routes(stderr);
 
             strcpy(if_info[if_index].name, ifa->ifa_name);
             if_info[if_index].ip = *addr;

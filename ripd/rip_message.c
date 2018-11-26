@@ -160,7 +160,7 @@ static void handle_rip_request(struct in_addr src) {
     if (fd < 0) return;
 
     printf("[Response to Request] Send via interface %s from %s", iface->name, inet_ntoa(iface->ip));
-    printf("to %s, size %d...", inet_ntoa(src), length);
+    printf(" to %s, size %d...", inet_ntoa(src), length);
 
     if (send(fd, &packet_response, length, 0) < 0) {
         fprintf(stderr, "Failed: %s\n", strerror(errno));
