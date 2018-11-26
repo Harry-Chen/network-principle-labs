@@ -17,6 +17,4 @@ void init_local_interfaces();
 
 if_info_t *get_interface_info(uint8_t index);
 
-extern struct in_addr NEXTHOP_ONLINK;
-
 #endif

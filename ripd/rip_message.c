@@ -6,6 +6,7 @@ static TRipPkt packet_request, packet_response, packet_update;
 static int UPDATE = 0;
 static int REQUEST = 1;
 
+
 static int establish_rip_fd(in_addr_t source, in_addr_t dest, uint8_t do_connect) {
     int fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (fd < 0) {
@@ -72,9 +73,6 @@ static void fill_and_send_multicast_packet(int mode) {
 
     if (mode == UPDATE) {
         packet = &packet_update;
-        struct in_addr placeholder = {
-            .s_addr = 0
-        };
     } else if (mode == REQUEST) {
         packet = &packet_request;
         length += sizeof(TRipEntry);
@@ -171,11 +169,15 @@ static void handle_rip_request(struct in_addr src) {
 }
 
 
-static void handle_rip_response(TRipEntry *entires, uint32_t size) {
+static void handle_rip_response(TRipEntry *entires, uint32_t size, struct in_addr src) {
     for (int i = 0; i < size; ++i) {
         TRipEntry *entry = &entires[i];
         uint32_t new_metric = ntohl(entry->uiMetric);
         uint32_t prefix_len = PREFIX_BIN2DEC(ntohl(entry->stPrefixLen.s_addr));
+
+        if (entry->stNexthop.s_addr == 0) { // according to RFC
+            entry->stNexthop = src;
+        }
 
         // inet_ntoa use one same memory for every call!!!!
         printf("[Handle Response: %d] Received route: %s/%d ", i, inet_ntoa(entry->stAddr), prefix_len);
@@ -241,7 +243,7 @@ static void handle_rip_message(TRipPkt *message, ssize_t length, struct in_addr 
             handle_rip_request(src);
             break;
         case RIP_RESPONSE:
-            handle_rip_response(entries, payload_size);
+            handle_rip_response(entries, payload_size, src);
             break;
     }
 

@@ -141,7 +141,11 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
         // calculate the actual network ip & prefix
         rip_entry[size].stPrefixLen.s_addr = htonl(PREFIX_DEC2BIN(rt_entry->uiPrefixLen));
         rip_entry[size].stAddr.s_addr = rt_entry->stIpPrefix.s_addr & rip_entry[size].stPrefixLen.s_addr;
-        rip_entry[size].stNexthop = nexthop;
+        if (onlink_route) {
+            rip_entry[size].stNexthop.s_addr = 0; // according to RFC, means 'self'
+        } else {
+            rip_entry[size].stNexthop = rt_entry -> stNexthop;
+        }
         rip_entry[size].uiMetric = htonl(rt_entry->uiMetric);
         ++size;
     }

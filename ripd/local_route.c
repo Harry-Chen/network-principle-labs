@@ -2,11 +2,8 @@
 #include "routing_table.h"
 #include "common.h"
 
-static if_info_t if_info[MAX_IF];
 
-struct in_addr NEXTHOP_ONLINK =  {
-    .s_addr = UINT32_MAX
-};
+static if_info_t if_info[MAX_IF];
 
 void init_local_interfaces() {
     struct ifaddrs *ifaddr, *ifa;
@@ -42,7 +39,7 @@ void init_local_interfaces() {
                 .stIpPrefix = *addr,
                 .uiPrefixLen = prefix_len,
                 .stNexthop = *addr,
-                .uiMetric = 0,
+                .uiMetric = 1,
                 .uiInterfaceIndex = if_index
             };
             insert_route_local(&local_route_entry);
