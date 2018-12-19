@@ -84,6 +84,7 @@ static void update_local_interfaces(int i) {
         entry->uiMetric = 16;
         printf("[Local Route] Interface %s changed to DOWN, notifying forwarder...\n", info->name);
         notify_forwarder(entry, CMD_DEL);
+        info->if_up = false;
     }
 
     freeifaddrs(ifaddr);
