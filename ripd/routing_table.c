@@ -6,9 +6,6 @@
 #include "rt.h"
 
 
-static int CMD_ADD = 24;
-static int CMD_DEL = 25;
-
 #define MAX_TABLE_SIZE (1 << 20)
 static TRtEntry *table[MAX_TABLE_SIZE];
 static int table_size = 1;
@@ -33,9 +30,10 @@ void insert_route_local(TRtEntry *entry) {
     table_size++;
     pthread_rwlock_unlock(&rwlock);
 
+    notify_forwarder(entry, CMD_ADD);
 }
 
-static void notify_forwarder(TRtEntry *entry, uint32_t cmd) {
+void notify_forwarder(TRtEntry *entry, uint32_t cmd) {
     
     int sendfd;
 
@@ -165,6 +163,7 @@ void print_all_routes(FILE *f) {
     pthread_mutex_lock(&mutex);
     while ((index = rt_iterate(index)) != -1) {
         TRtEntry *entry = table[index];
+        if (entry->uiMetric == 16) continue;
         fprintf(f, "[Current Route] %s/%d ", inet_ntoa(entry->stIpPrefix), entry->uiPrefixLen);
         fprintf(f, "via %s metric %d\n", inet_ntoa(entry->stNexthop), entry->uiMetric);
     }
