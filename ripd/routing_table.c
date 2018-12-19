@@ -165,10 +165,10 @@ void print_all_routes(FILE *f) {
     pthread_rwlock_rdlock(&rwlock);
     pthread_mutex_lock(&mutex);
     
-
-    printf("-----------------------------------------------------\n");
-    printf("   |        Network       |   Nexthop Addr  | Metric \n");
-    printf("-----------------------------------------------------\n");
+    fprintf(f, "\n");
+    fprintf(f, "-----------------------------------------------------\n");
+    fprintf(f, "   |        Network       |   Nexthop Addr  | Metric \n");
+    fprintf(f, "-----------------------------------------------------\n");
 
     while ((index = rt_iterate(index)) != -1) {
         TRtEntry *entry = table[index];
@@ -179,7 +179,7 @@ void print_all_routes(FILE *f) {
             TO_IP(entry->stNexthop.s_addr), entry->uiMetric);
     }
 
-    printf("-----------------------------------------------------\n");
+    fprintf(f, "-----------------------------------------------------\n");
     
     pthread_mutex_unlock(&mutex);
     pthread_rwlock_unlock(&rwlock);
