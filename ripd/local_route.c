@@ -71,20 +71,21 @@ static void update_local_interfaces(int i) {
 
             break;
         }
-
-        // link state DOWN
-        if (!found) {
-            // interface not initialized
-            if (info->ip.s_addr == 0) return;
-            // status not changed
-            if (!info->if_up) return;
-            // status changed from UP to DOWN
-            TRtEntry *entry = lookup_route_exact(info->ip, info->prefix_len);
-            entry->uiMetric = 16;
-            printf("[Local Route] Interface %s changed to DOWN, notifying forwarder...\n", info->name);
-            notify_forwarder(entry, CMD_DEL);
-        }
     }
+
+    // link state DOWN
+    if (!found) {
+        // interface not initialized
+        if (info->ip.s_addr == 0) return;
+        // status not changed
+        if (!info->if_up) return;
+        // status changed from UP to DOWN
+        TRtEntry *entry = lookup_route_exact(info->ip, info->prefix_len);
+        entry->uiMetric = 16;
+        printf("[Local Route] Interface %s changed to DOWN, notifying forwarder...\n", info->name);
+        notify_forwarder(entry, CMD_DEL);
+    }
+
     freeifaddrs(ifaddr);
 }
 
