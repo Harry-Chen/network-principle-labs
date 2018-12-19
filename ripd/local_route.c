@@ -38,7 +38,7 @@ static void update_local_interfaces(int i) {
 
             if (info->ip.s_addr != 0) {
                 // interface initialized, but state changed from DOWN to UP
-                TRtEntry *entry = lookup_route_exact(info->ip, info->prefix_len);
+                TRtEntry *entry = lookup_route_longest(info->ip);
                 entry->uiMetric = 1;
                 printf("[Local Route] Interface %s changed to UP, notifying forwarder...\n", info->name);
                 notify_forwarder(entry, CMD_ADD);
@@ -80,7 +80,7 @@ static void update_local_interfaces(int i) {
         // status not changed
         if (!info->if_up) return;
         // status changed from UP to DOWN
-        TRtEntry *entry = lookup_route_exact(info->ip, info->prefix_len);
+        TRtEntry *entry = lookup_route_longest(info->ip);
         entry->uiMetric = 16;
         printf("[Local Route] Interface %s changed to DOWN, notifying forwarder...\n", info->name);
         notify_forwarder(entry, CMD_DEL);
