@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-extern int should_exit;
+extern bool should_exit;
 
 static int static_route_get(int sock_fd, struct selfroute *selfrt) {
 

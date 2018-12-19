@@ -6,12 +6,12 @@
 #include "local_route.h"
 #include "rip_message.h"
 
-int should_exit = 0;
+bool should_exit = false;
 
 void signal_handler(int signo) {
     if (signo == SIGINT) {
         printf("Received SIGINT, exiting...\n");
-        should_exit = 1;
+        should_exit = true;
         exit(0);
     }
 }

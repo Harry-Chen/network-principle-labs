@@ -12,20 +12,21 @@
 #include <signal.h>
 #include <time.h>
 
-#define CMD_OPTIONS "vsh"
+#define CMD_OPTIONS "lvsh"
 
 #define DEBUG(...) {if (verbose) {printf(__VA_ARGS__);}}
 
 #define BUF_SIZE 65535
 
-static int verbose = 0;
-static int speed_up = 0;
-int should_exit = 0;
+static bool verbose = false;
+static bool speed_up = false;
+static bool local_interface = false;
+bool should_exit = false;
 
 void signal_handler(int signo) {
     if (signo == SIGINT) {
         printf("Received SIGINT, exiting...\n");
-        should_exit = 1;
+        should_exit = true;
     }
 }
 
@@ -38,14 +39,17 @@ int main(int argc, char *argv[]) {
 
     while (opt != -1) {
         switch (opt) {
+            case 'l':
+                local_interface = true;
+                break;
             case 'v':
-                verbose = 1;
+                verbose = true;
                 break;
             case 's':
-                speed_up = 1;
+                speed_up = true;
                 break;
             case 'h':
-                printf("TrivialRouter 0.0.1\nAUTHOR: Harry Chen <i@harrychen.xyz>\nUSAGE: %s [-v] [-s]\n-v:\tVerbose Mode\n-s:\tSpeed-up Mode\n-h:\tShow this usage\n", cmd_name);
+                printf("TrivialRouter 0.0.1\nAUTHOR: Harry Chen <i@harrychen.xyz>\nUSAGE: %s [-lvs]\n-l:\tAdd local interface to table\n-v:\tVerbose Mode\n-s:\tSpeed-up Mode\n-h:\tShow this usage\n", cmd_name);
                 exit(EXIT_SUCCESS);
                 break;
         }
@@ -89,8 +93,10 @@ int main(int argc, char *argv[]) {
     // initialize routing table
     init_route();
 
-    // insert link routes to routing table
-    init_local_interfaces();
+    if (local_interface) {
+        // insert link routes to routing table
+        init_local_interfaces();
+    }
 
     // use thread to receive routing table change from quagga
     pthread_t tid;
@@ -151,7 +157,7 @@ int main(int argc, char *argv[]) {
 
             int result;
 
-            if (speed_up == 0) {
+            if (speed_up == false) {
                 // verify checksum
                 result = calculate_check_sum(ip_recv_header);
                 DEBUG("Checksum is %x", result);
@@ -194,7 +200,7 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-            if (speed_up == 0) {
+            if (speed_up == false) {
                 // calculate new checksum
                 uint16_t new_checksum = calculate_check_sum(ip_recv_header);
                 DEBUG("New checksum of packet is %x\n", new_checksum);

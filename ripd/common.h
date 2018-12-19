@@ -34,7 +34,7 @@
 #define AddRoute        24
 #define DelRoute        25
 
-extern int should_exit;
+extern bool should_exit;
 
 typedef struct RipEntry
 {
