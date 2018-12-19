@@ -62,6 +62,7 @@ typedef struct RouteEntry
 	struct in_addr stNexthop;
 	uint32_t uiMetric;
 	uint32_t uiInterfaceIndex;
+	bool isRip;
 } TRtEntry;
 
 typedef struct SockRoute

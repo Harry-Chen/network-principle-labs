@@ -76,6 +76,7 @@ void insert_route_rip(TRipEntry *entry) {
     item->uiPrefixLen = PREFIX_BIN2DEC(ntohl(entry->stPrefixLen.s_addr));
     item->uiMetric = ntohl(entry->uiMetric) + 1;
     item->stNexthop = entry->stNexthop;
+    item->isRip = true;
 
     TRtEntry *local_route = lookup_route_longest(item->stNexthop);
     assert(local_route != NULL);
@@ -157,16 +158,31 @@ int fill_rip_packet(TRipEntry *rip_entry, struct in_addr nexthop) {
     return size;
 }
 
+#define TO_IP(x) (x)%256, ((x)>>8)%256, ((x)>>16)%256, ((x>>24))%256
+
 void print_all_routes(FILE *f) {
     int index = 0;
     pthread_rwlock_rdlock(&rwlock);
     pthread_mutex_lock(&mutex);
+    
+
+    printf("-----------------------------------------------------\n");
+    printf("   |        Network       |   Nexthop Addr  | Metric \n");
+    printf("-----------------------------------------------------\n");
+
     while ((index = rt_iterate(index)) != -1) {
         TRtEntry *entry = table[index];
         if (entry->uiMetric == 16) continue;
-        fprintf(f, "[Current Route] %s/%d ", inet_ntoa(entry->stIpPrefix), entry->uiPrefixLen);
-        fprintf(f, "via %s metric %d\n", inet_ntoa(entry->stNexthop), entry->uiMetric);
+
+        fprintf(f, " %c | %3d.%3d.%3d.%3d / %2d | %3d.%3d.%3d.%3d | %4d\n", entry->isRip ? 'R' : 'C',
+            TO_IP(entry->stIpPrefix.s_addr), entry->uiPrefixLen,
+            TO_IP(entry->stNexthop.s_addr), entry->uiMetric);
     }
+
+    printf("-----------------------------------------------------\n");
+    
     pthread_mutex_unlock(&mutex);
     pthread_rwlock_unlock(&rwlock);
 }
+
+#undef TO_IP

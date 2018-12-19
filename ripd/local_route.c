@@ -59,7 +59,8 @@ static void update_local_interfaces(int i) {
                 .uiPrefixLen = prefix_len,
                 .stNexthop = *addr,
                 .uiMetric = 1,
-                .uiInterfaceIndex = i
+                .uiInterfaceIndex = i,
+                .isRip = false
             };
             insert_route_local(&local_route_entry);
 
