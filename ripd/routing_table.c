@@ -30,7 +30,7 @@ void insert_route_local(TRtEntry *entry) {
     table_size++;
     pthread_rwlock_unlock(&rwlock);
 
-    notify_forwarder(entry, CMD_ADD);
+    // notify_forwarder(entry, CMD_ADD);
 }
 
 void notify_forwarder(TRtEntry *entry, uint32_t cmd) {
