@@ -9,3 +9,5 @@ bin/
 obj/
 
 .vscode/
+
+*.pdf
