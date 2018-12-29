@@ -93,10 +93,8 @@ int main(int argc, char *argv[]) {
     // initialize routing table
     init_route();
 
-    if (local_interface) {
-        // insert link routes to routing table
-        init_local_interfaces();
-    }
+    // insert link routes to routing table
+    init_local_interfaces();
 
     // use thread to receive routing table change from quagga
     pthread_t tid;
