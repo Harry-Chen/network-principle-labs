@@ -80,7 +80,7 @@ static void fill_and_send_multicast_packet(int mode) {
 
     for (int i = 0; i < MAX_IF; ++i) {
         if_info_t *iface = get_interface_info(i);
-        if (iface->name[0] == '\0' || !iface->multicast) continue; // empty interface or cannot multicast
+        if (!iface->if_valid || !iface->if_up || !iface->multicast) continue; // empty interface or cannot multicast
 
         int fd = establish_rip_fd(iface->ip.s_addr, inet_addr(RIP_GROUP), 1);
         if (fd < 0) continue;

@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+extern bool local_interface;
+
 static struct if_info_t if_info[MAX_IF];
 
 void init_local_interfaces() {
@@ -33,9 +35,11 @@ void init_local_interfaces() {
             uint32_t prefix_len = 32 - __builtin_ctz(prefix);
             printf(" with IPv4 address: %s/%d\n", ip_addr, prefix_len);
 
-            // insert link-scope and local-address routes
-            insert_route(*addr, 32, ifa->ifa_name, if_index, NEXTHOP_SELF);
-            insert_route(*addr, prefix_len, ifa->ifa_name, if_index, NEXTHOP_ONLINK);
+            if (local_interface) {
+                // insert link-scope and local-address routes
+                insert_route(*addr, 32, ifa->ifa_name, if_index, NEXTHOP_SELF);
+                insert_route(*addr, prefix_len, ifa->ifa_name, if_index, NEXTHOP_ONLINK);
+            }
 
             strcpy(if_info[if_index].name, ifa->ifa_name);
             if_info[if_index].ip = addr->s_addr;

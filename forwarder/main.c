@@ -20,7 +20,7 @@
 
 static bool verbose = false;
 static bool speed_up = false;
-static bool local_interface = false;
+bool local_interface = false;
 bool should_exit = false;
 
 void signal_handler(int signo) {
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
                 speed_up = true;
                 break;
             case 'h':
-                printf("TrivialRouter 0.0.1\nAUTHOR: Harry Chen <i@harrychen.xyz>\nUSAGE: %s [-lvs]\n-l:\tAdd local interface to table\n-v:\tVerbose Mode\n-s:\tSpeed-up Mode\n-h:\tShow this usage\n", cmd_name);
+                printf("TrivialRouter 0.0.1\nAUTHOR: Harry Chen <i@harrychen.xyz>\nUSAGE: %s [-lvsh]\n-l:\tAdd local interface to table\n-v:\tVerbose Mode\n-s:\tSpeed-up Mode\n-h:\tShow this usage\n", cmd_name);
                 exit(EXIT_SUCCESS);
                 break;
         }
@@ -216,10 +216,6 @@ int main(int argc, char *argv[]) {
 
             if (result < 0) {
                 fprintf(stderr, "Get ARP entry failed for %s @%s : %s\n", ip_addr_from, nexthopinfo.host.if_name, strerror(errno));
-                exit(EXIT_FAILURE);
-            } else if (result == 2) {
-                DEBUG("Lookup ARP table failed, maybe next hop is unreachable "
-                      "or myself?\n");
                 continue;
             } else if (result == 1) {
                 DEBUG("MAC Address for next hop is not in the ARP cache.\n");
