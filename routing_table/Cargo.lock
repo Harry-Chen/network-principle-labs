@@ -1,0 +1,21 @@
+[[package]]
+name = "libc"
+version = "0.2.58"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "routing_table"
+version = "0.1.0"
+dependencies = [
+ "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
+ "treebitmap 0.4.0 (git+https://github.com/hroi/treebitmap/)",
+]
+
+[[package]]
+name = "treebitmap"
+version = "0.4.0"
+source = "git+https://github.com/hroi/treebitmap/#9540ae5e84d3f5123306588af45d0bd71f22cc44"
+
+[metadata]
+"checksum libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)" = "6281b86796ba5e4366000be6e9e18bf35580adf9e63fbe2294aadb587613a319"
+"checksum treebitmap 0.4.0 (git+https://github.com/hroi/treebitmap/)" = "<none>"
